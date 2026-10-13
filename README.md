@@ -1,32 +1,32 @@
-# TimeControl-XP
+- Uziel Gamarra# TimeControl-XP
 
-Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII en Python.
+Sistema web multiusuario para la gestiï¿½n de temporizadores, desarrollado a partir de un reloj ASCII en Python.
 
-El proyecto busca evolucionar una idea inicial simple hacia una aplicación completa con autenticación, autorización, persistencia de datos, concurrencia, API REST, frontend, Docker y prácticas de Programación Extrema (XP).
+El proyecto busca evolucionar una idea inicial simple hacia una aplicaciï¿½n completa con autenticaciï¿½n, autorizaciï¿½n, persistencia de datos, concurrencia, API REST, frontend, Docker y prï¿½cticas de Programaciï¿½n Extrema (XP).
 
 ## Objetivo
 
-Desarrollar una aplicación que permita a distintos usuarios crear y gestionar temporizadores de forma independiente.
+Desarrollar una aplicaciï¿½n que permita a distintos usuarios crear y gestionar temporizadores de forma independiente.
 
-Cada usuario podrá iniciar sesión, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial.
+Cada usuario podrï¿½ iniciar sesiï¿½n, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial.
 
-El sistema deberá permitir que varios temporizadores funcionen simultáneamente sin bloquearse entre sí.
+El sistema deberï¿½ permitir que varios temporizadores funcionen simultï¿½neamente sin bloquearse entre sï¿½.
 
 ## Requerimientos principales
 
 - Registro de usuarios.
-- Inicio y cierre de sesión.
+- Inicio y cierre de sesiï¿½n.
 - Roles USER y ADMIN.
-- Gestión de temporizadores.
+- Gestiï¿½n de temporizadores.
 - Historial de eventos.
 - Persistencia en base de datos.
 - API REST.
-- Autorización por usuario y rol.
-- Gestión de sesión.
+- Autorizaciï¿½n por usuario y rol.
+- Gestiï¿½n de sesiï¿½n.
 - Procesamiento concurrente o multihilo.
 - Frontend para probar las funcionalidades.
-- Ejecución mediante Docker.
-- Desarrollo aplicando Programación Extrema.
+- Ejecuciï¿½n mediante Docker.
+- Desarrollo aplicando Programaciï¿½n Extrema.
 
 ## Roles
 
@@ -36,13 +36,13 @@ Puede crear, iniciar, pausar, reanudar y finalizar sus propios temporizadores.
 
 ### ADMIN
 
-Puede realizar todas las acciones de un usuario y además consultar usuarios y temporizadores del sistema.
+Puede realizar todas las acciones de un usuario y ademï¿½s consultar usuarios y temporizadores del sistema.
 
 ## Concurrencia
 
-El sistema deberá permitir la ejecución simultánea de múltiples temporizadores sin que uno bloquee a los demás.
+El sistema deberï¿½ permitir la ejecuciï¿½n simultï¿½nea de mï¿½ltiples temporizadores sin que uno bloquee a los demï¿½s.
 
-La implementación podrá utilizar herramientas de Python como:
+La implementaciï¿½n podrï¿½ utilizar herramientas de Python como:
 
 - threading
 - asyncio
@@ -51,7 +51,7 @@ La implementación podrá utilizar herramientas de Python como:
 ## Historias de usuario iniciales
 
 ### HU1
-Como usuario quiero registrarme e iniciar sesión para acceder al sistema.
+Como usuario quiero registrarme e iniciar sesiï¿½n para acceder al sistema.
 
 ### HU2
 Como usuario quiero crear un temporizador para controlar una actividad.
@@ -60,7 +60,7 @@ Como usuario quiero crear un temporizador para controlar una actividad.
 Como usuario quiero iniciar, pausar y reanudar un temporizador.
 
 ### HU4
-Como usuario quiero ejecutar varios temporizadores simultáneamente.
+Como usuario quiero ejecutar varios temporizadores simultï¿½neamente.
 
 ### HU5
 Como usuario quiero consultar el historial de un temporizador.
@@ -68,13 +68,13 @@ Como usuario quiero consultar el historial de un temporizador.
 ### HU6
 Como administrador quiero consultar los usuarios y temporizadores del sistema.
 
-## Programación Extrema
+## Programaciï¿½n Extrema
 
-Cada funcionalidad deberá atravesar el ciclo:
+Cada funcionalidad deberï¿½ atravesar el ciclo:
 
 RED -> GREEN -> REFACTOR
 
-Se aplicarán historias de usuario, pruebas automatizadas, integración frecuente, revisión entre pares y refactorización continua.
+Se aplicarï¿½n historias de usuario, pruebas automatizadas, integraciï¿½n frecuente, revisiï¿½n entre pares y refactorizaciï¿½n continua.
 
 ## Estado actual
 
@@ -82,28 +82,28 @@ Actualmente existe un prototipo frontend funcional con:
 
 - Login y registro simulado.
 - Roles ADMIN y USER.
-- Creación y control de temporizadores.
+- Creaciï¿½n y control de temporizadores.
 - Historial de eventos.
 - Reloj ASCII.
-- Simulación de múltiples temporizadores activos.
+- Simulaciï¿½n de mï¿½ltiples temporizadores activos.
 
 ### Pendiente
 
 - Backend real en Python.
 - API REST.
 - Persistencia en base de datos.
-- Autenticación real.
-- Gestión de sesión real.
-- Autorización en backend.
+- Autenticaciï¿½n real.
+- Gestiï¿½n de sesiï¿½n real.
+- Autorizaciï¿½n en backend.
 - Concurrencia del lado servidor.
 - Docker.
-- Integración frontend-backend.
+- Integraciï¿½n frontend-backend.
 
 ## Integrantes
 
 - Federico Montoro
-- Uziel
+- Uziel Gamarra
 
-## Proyecto académico
+## Proyecto acadï¿½mico
 
-Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programación Extrema.
+Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programaciï¿½n Extrema.

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeControl - Reloj ASCII Web</title>
+    <!-- Tailwind CSS for modern aesthetics -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .ascii-font { font-family: 'JetBrains Mono', monospace; white-space: pre; line-height: 1.1; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl tracking-wider">⏱️</div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">TimeControl</h1>
+                    <p class="text-xs text-slate-400">Evolución de Reloj ASCII a Web Multi-usuario</p>
+                </div>
+            </div>
+            <div id="nav-user-info" class="flex items-center space-x-4 hidden">
+                <span id="user-badge" class="text-xs px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30 font-medium"></span>
+                <button onclick="logout()" class="text-sm bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg border border-rose-500/30 transition">Cerrar Sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+        
+        <!-- AUTH VIEW -->
+        <div id="view-auth" class="max-w-md mx-auto mt-12 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+            <div class="text-center mb-8">
+                <h2 id="auth-title" class="text-2xl font-bold">Iniciar Sesión</h2>
+                <p class="text-sm text-slate-400 mt-1">Accede para gestionar tus temporizadores ASCII</p>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Usuario</label>
+                    <input type="text" id="auth-username" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition" placeholder="ej. admin o user1">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Contraseña</label>
+                    <input type="password" id="auth-password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-indigo-500 transition" placeholder="••••••••">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-600/25">Entrar</button>
+            </form>
+
+            <div class="mt-6 text-center text-sm text-slate-400">
+                <span id="auth-toggle-text">¿No tienes cuenta?</span>
+                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-indigo-400 hover:underline ml-1 font-medium">Regístrate</button>
+            </div>
+
+            <div class="mt-8 p-4 bg-slate-950/50 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+                <p class="font-semibold text-slate-300">💡 Credenciales de prueba recomendadas:</p>
+                <p>• Admin: <code class="text-indigo-400">admin</code> / <code class="text-indigo-400">admin123</code></p>
+                <p>• Usuario estándar: <code class="text-indigo-400">user1</code> / <code class="text-indigo-400">user123</code></p>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-6 hidden">
+            
+            <!-- Controls bar & Active Highlight -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Create Timer Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2 flex items-center">
+                            <span class="mr-2">➕</span> Nuevo Temporizador
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4">Crea un nuevo cronómetro independiente con su propio hilo de procesamiento.</p>
+                        
+                        <form onsubmit="createTimer(event)" class="space-y-3">
+                            <input type="text" id="timer-name" required placeholder="Nombre del temporizador (ej. Estudiar)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition text-sm">Crear y Activar</button>
+                        </form>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400 flex justify-between">
+                        <span>Rol Actual: <strong id="dash-role" class="text-indigo-400">USER</strong></span>
+                        <span>Total Activos: <strong id="dash-count" class="text-cyan-400">0</strong></span>
+                    </div>
+                </div>
+
+                <!-- ASCII Active Viewer -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute top-4 left-4 flex items-center space-x-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Visor ASCII en Tiempo Real</span>
+                    </div>
+                    
+                    <div id="ascii-container" class="my-auto overflow-x-auto max-w-full py-4 px-2 text-indigo-400 ascii-font text-xs sm:text-sm text-center">
+                        [ Selecciona o inicia un temporizador para visualizar el reloj ASCII ]
+                    </div>
+
+                    <div id="ascii-timer-title" class="text-xs text-slate-400 mt-2 font-medium">Ningún temporizador seleccionado</div>
+                </div>
+
+            </div>
+
+            <!-- Timers List Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold flex items-center">
+                        <span class="mr-2">📋</span> Lista de Temporizadores (Concurrencia Activa)
+                    </h3>
+                    <button onclick="fetchTimers()" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">🔄 Refrescar</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="p-3 rounded-l-xl">ID / Nombre</th>
+                                <th class="p-3">Propietario</th>
+                                <th class="p-3">Estado</th>
+                                <th class="p-3">Tiempo Transcurrido</th>
+                                <th class="p-3 text-right rounded-r-xl">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timers-table-body" class="divide-y divide-slate-800/60">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log / History Section (HU5) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <span class="mr-2">📜</span> Historial de Acciones y Eventos
+                </h3>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 max-h-48 overflow-y-auto text-xs font-mono space-y-2" id="history-log">
+                    <div class="text-slate-500">[Sistema inicializado correctamente con arquitectura XP y soporte multiusuario]</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Modal / Message Box (Avoiding alert()) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
+            <div id="modal-icon" class="text-3xl">ℹ️</div>
+            <h4 id="modal-title" class="text-lg font-bold">Mensaje</h4>
+            <p id="modal-message" class="text-sm text-slate-300"></p>
+            <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl transition text-sm">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        // ASCII Font Matrix Data structures (derived from your reloj.py)
+        const ASCII_DIGITS = {
+            '0': [
+                "|‾‾‾‾‾‾‾|  ",
+                "| [ \\\\] |  ",
+                "| [\\ \\] |  ",
+                "| [\\\\ ] |  ",
+                "| [ \\\\] |  ",
+                "| [\\ \\] |  ",
+                "| [\\\\ ] |  ",
+                "| [ \\\\] |  ",
+                "|_______|  "
+            ],
+            '1': [
+                "   ____    	",
+                "  /   |    	",
+                " / /| |    	",
+                "/ / | |    	",
+                "\\/  | |    	",
+                "  __| |___ 	",
+                " |       | 	",
+                "           	",
+                "           	"
+            ],
+            '2': [
+                "   ____    	",
+                "  /    |   	",
+                " / /\\  |   	",
+                " \\/ / /    	",
+                "   / /     	",
+                " _/ /_____ 	",
+                "|        | 	",
+                "           	",
+                "           	"
+            ],
+            '3': [
+                "   _______ 	",
+                "   _____ | 	",
+                "       | | 	",
+                "   ____| | 	",
+                "   _____ | 	",
+                "       | | 	",
+                "   _____ | 	",
+                "           	",
+                "           	"
+            ],
+            '4': [
+                "   | |  | |	",
+                "   | |  | |	",
+                "   | |__| |	",
+                "   |      |	",
+                "   ‾‾‾‾‾| |	",
+                "        | |	",
+                "        | |	",
+                "           	",
+                "           	"
+            ],
+            '5': [
+                "   ______  	",
+                "   | ____  	",
+                "   | |     	",
+                "   | |___  	",
+                "   |     | 	",
+                "   ‾‾‾‾| | 	",
+                "       | | 	",
+                "   ‾‾‾‾  | 	",
+                "   ‾‾‾‾‾‾  	"
+            ],
+            '6': [
+                "    _______	",
+                "    | _____	",
+                "    | |    	",
+                "    | |    	",
+                "    | |‾‾‾|	",
+                "    | |   |	",
+                "    | |____	",
+                "           	",
+                "           	"
+            ],
+            '7': [
+                "_______    	",
+                "\\ _____    	",
+                " \\ \\       	",
+                "  \\ \\      	",
+                " ‾‾\\ \\‾‾‾‾ 	",
+                " ‾‾ \\ \\‾‾‾‾	",
+                "     \\ \\   	",
+                "      \\ \\  	",
+                "       \\ \\ "
+            ],
+            '8': [
+                " _______   	",
+                " | ___ |   	",
+                " | [ ] |   	",
+                " | ‾‾‾ |   	",
+                " | ___ |   	",
+                " | [ ] |   	",
+                " | ‾‾‾ |   	",
+                " |_____|   	",
+                " ‾‾‾‾‾‾    	"
+            ],
+            '9': [
+                "_______    	",
+                "|     |    	",
+                "| | | |    	",
+                "| ‾‾‾ |    	",
+                "\\ \\‾‾‾     	",
+                " \\ \\       	",
+                "  \\ \\___   	",
+                "  |    |   	",
+                "           	"
+            ],
+            ':': [
+                "           	",
+                "     █     	",
+                "     █     	",
+                "           	",
+                "     +     	",
+                "           	",
+                "     █     	",
+                "     █     	",
+                "           	"
+            ]
+        };
+
+        // In-memory Database & State representation for the multi-user system
+        let dbState = {
+            users: [
+                { username: 'admin', password: 'admin123', role: 'ADMIN' },
+                { username: 'user1', password: 'user123', role: 'USER' }
+            ],
+            timers: [
+                { id: 't1', name: 'Reloj Principal', owner: 'admin', status: 'RUNNING', accumulatedSeconds: 3665, lastStartedAt: Date.now() },
+                { id: 't2', name: 'Entrenamiento', owner: 'user1', status: 'PAUSED', accumulatedSeconds: 125, lastStartedAt: null }
+            ],
+            history: [
+                { timestamp: new Date().toLocaleTimeString(), text: 'Sistema iniciado. Creados usuarios admin y user1.' }
+            ]
+        };
+
+        let currentUser = null;
+        let isRegisterMode = false;
+        let activeViewTimerId = 't1';
+        let tickerInterval = null;
+
+        // Initialize application loop
+        window.onload = function() {
+            startTickerLoop();
+        };
+
+        function showModal(title, message, icon = 'ℹ️') {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('auth-title').innerText = isRegisterMode ? 'Registro de Usuario' : 'Iniciar Sesión';
+            document.getElementById('auth-submit-btn').innerText = isRegisterMode ? 'Registrarse' : 'Entrar';
+            document.getElementById('auth-toggle-text').innerText = isRegisterMode ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+            document.getElementById('auth-toggle-btn').innerText = isRegisterMode ? 'Inicia Sesión' : 'Regístrate';
+        }
+
+        // HU1: Authentication & Session management
+        function handleAuth(event) {
+            event.preventDefault();
+            const u = document.getElementById('auth-username').value.trim();
+            const p = document.getElementById('auth-password').value.trim();
+
+            if (isRegisterMode) {
+                if (dbState.users.find(x => x.username === u)) {
+                    showModal('Error', 'El usuario ya existe', '⚠️');
+                    return;
+                }
+                const newUser = { username: u, password: p, role: u === 'admin' ? 'ADMIN' : 'USER' };
+                dbState.users.push(newUser);
+                addHistory(`Usuario registrado: ${u} (${newUser.role})`);
+                showModal('Éxito', 'Usuario registrado con éxito. Ya puedes iniciar sesión.', '✅');
+                toggleAuthMode();
+            } else {
+                const found = dbState.users.find(x => x.username === u && x.password === p);
+                if (found) {
+                    currentUser = found;
+                    document.getElementById('view-auth').classList.add('hidden');
+                    document.getElementById('view-dashboard').classList.remove('hidden');
+                    document.getElementById('nav-user-info').classList.remove('hidden');
+                    document.getElementById('user-badge').innerText = `${currentUser.username} (${currentUser.role})`;
+                    document.getElementById('dash-role').innerText = currentUser.role;
+                    addHistory(`Inicio de sesión exitoso: ${currentUser.username}`);
+                    fetchTimers();
+                } else {
+                    showModal('Credenciales Incorrectas', 'Verifica tu usuario y contraseña.', '❌');
+                }
+            }
+        }
+
+        function logout() {
+            addHistory(`Cierre de sesión: ${currentUser.username}`);
+            currentUser = null;
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('nav-user-info').classList.add('hidden');
+            document.getElementById('view-auth').classList.remove('hidden');
+            document.getElementById('auth-form').reset();
+        }
+
+        // HU2: Create Timer
+        function createTimer(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('timer-name');
+            const newTimer = {
+                id: 't_' + Math.random().toString(36.substr(2, 6)),
+                name: nameInput.value,
+                owner: currentUser.username,
+                status: 'RUNNING',
+                accumulatedSeconds: 0,
+                lastStartedAt: Date.now()
+            };
+            dbState.timers.push(newTimer);
+            nameInput.value = '';
+            addHistory(`Temporizador creado e iniciado: "${newTimer.name}" por ${currentUser.username}`);
+            activeViewTimerId = newTimer.id;
+            fetchTimers();
+        }
+
+        // HU3 & HU4: Controls (Start, Pause, Resume, Stop) with Concurrency Simulation
+        function controlTimer(id, action) {
+            const timer = dbState.timers.find(t => t.id === id);
+            if (!timer) return;
+
+            // Authorization check (Admin can control anything, User only their own)
+            if (currentUser.role !== 'ADMIN' && timer.owner !== currentUser.username) {
+                showModal('Acceso denegado', 'No tienes permisos para modificar temporizadores ajenos.', '🔒');
+                return;
+            }
+
+            const now = Date.now();
+            if (action === 'start' || action === 'resume') {
+                if (timer.status !== 'RUNNING') {
+                    timer.status = 'RUNNING';
+                    timer.lastStartedAt = now;
+                    addHistory(`Temporizador ${timer.name} (${action})`);
+                }
+            } else if (action === 'pause') {
+                if (timer.status === 'RUNNING') {
+                    timer.accumulatedSeconds += Math.floor((now - timer.lastStartedAt) / 1000);
+                    timer.status = 'PAUSED';
+                    timer.lastStartedAt = null;
+                    addHistory(`Temporizador ${timer.name} pausado`);
+                }
+            } else if (action === 'stop') {
+                if (timer.status === 'RUNNING') {
+                    timer.accumulatedSeconds += Math.floor((now - timer.lastStartedAt) / 1000);
+                }
+                timer.status = 'STOPPED';
+                timer.lastStartedAt = null;
+                addHistory(`Temporizador ${timer.name} finalizado`);
+            }
+            fetchTimers();
+        }
+
+        function setActiveView(id) {
+            activeViewTimerId = id;
+            fetchTimers();
+        }
+
+        // Fetch & Render Timers
+        function fetchTimers() {
+            const tbody = document.getElementById('timers-table-body');
+            tbody.innerHTML = '';
+
+            let visibleTimers = dbState.timers;
+            // HU6: Admin views everything, standard user views own or public
+            if (currentUser.role !== 'ADMIN') {
+                visibleTimers = dbState.timers.filter(t => t.owner === currentUser.username);
+            }
+
+            document.getElementById('dash-count').innerText = dbState.timers.filter(t => t.status === 'RUNNING').length;
+
+            if (visibleTimers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No hay temporizadores registrados. ¡Crea uno arriba!</td></tr>`;
+                return;
+            }
+
+            visibleTimers.forEach(t => {
+                let currentSec = t.accumulatedSeconds;
+                if (t.status === 'RUNNING' && t.lastStartedAt) {
+                    currentSec += Math.floor((Date.now() - t.lastStartedAt) / 1000);
+                }
+
+                const hrs = Math.floor(currentSec / 3600).toString().padStart(2, '0');
+                const mins = Math.floor((currentSec % 3600) / 60).toString().padStart(2, '0');
+                const secs = (currentSec % 60).toString().padStart(2, '0');
+                const timeFormatted = `${hrs}:${mins}:${secs}`;
+
+                const statusColor = t.status === 'RUNNING' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                                    t.status === 'PAUSED' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+
+                const tr = document.createElement('tr');
+                tr.className = `border-b border-slate-800/60 hover:bg-slate-800/30 transition ${activeViewTimerId === t.id ? 'bg-indigo-950/20' : ''}`;
+                tr.innerHTML = `
+                    <td class="p-3 font-medium cursor-pointer" onclick="setActiveView('${t.id}')">
+                        <div class="text-slate-100 flex items-center">${t.name} ${activeViewTimerId === t.id ? '📍' : ''}</div>
+                        <div class="text-xs text-slate-500 font-mono">${t.id}</div>
+                    </td>
+                    <td class="p-3 text-slate-400">${t.owner}</td>
+                    <td class="p-3"><span class="text-xs px-2.5 py-1 rounded-full border font-medium ${statusColor}">${t.status}</span></td>
+                    <td class="p-3 font-mono text-indigo-300 font-semibold">${timeFormatted}</td>
+                    <td class="p-3 text-right space-x-1">
+                        ${t.status === 'RUNNING' ? 
+                            `<button onclick="controlTimer('${t.id}', 'pause')" class="px-2.5 py-1 bg-amber-600/20 text-amber-300 rounded border border-amber-500/30 text-xs hover:bg-amber-600/30">Pausar</button>` :
+                            t.status === 'STOPPED' ? '' :
+                            `<button onclick="controlTimer('${t.id}', 'resume')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-300 rounded border border-emerald-500/30 text-xs hover:bg-emerald-600/30">Reanudar</button>`
+                        }
+                        ${t.status !== 'STOPPED' ? 
+                            `<button onclick="controlTimer('${t.id}', 'stop')" class="px-2.5 py-1 bg-rose-600/20 text-rose-300 rounded border border-rose-500/30 text-xs hover:bg-rose-600/30">Finalizar</button>` : ''
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ASCII Rendering Engine adapted from reloj.py
+        function renderAsciiClock(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            const hStr = hrs.toString().padStart(2, '0');
+            const mStr = mins.toString().padStart(2, '0');
+            const sStr = secs.toString().padStart(2, '0');
+
+            const digits = [hStr[0], hStr[1], ':', mStr[0], mStr[1], ':', sStr[0], sStr[1]];
+            
+            let lines = ['', '', '', '', '', '', '', '', ''];
+            for (let i = 0; i < 9; i++) {
+                let lineStr = '';
+                digits.forEach(d => {
+                    const matrix = ASCII_DIGITS[d] || ASCII_DIGITS['0'];
+                    lineStr += (matrix[i] || "         ");
+                });
+                lines[i] = lineStr;
+            }
+
+            document.getElementById('ascii-container.innerText') // handled safely below
+            document.getElementById('ascii-container').innerText = lines.join('\n');
+        }
+
+        // Background ticker loop simulating independent concurrency threads
+        function startTickerLoop() {
+            setInterval(() => {
+                if (!currentUser) return;
+                
+                // Update active timer ASCII visual
+                const activeTimer = dbState.timers.find(t => t.id === activeViewTimerId);
+                if (activeTimer) {
+                    let currentSec = activeTimer.accumulatedSeconds;
+                    if (activeTimer.status === 'RUNNING' && activeTimer.lastStartedAt) {
+                        currentSec += Math.floor((Date.now() - activeTimer.lastStartedAt) / 1000);
+                    }
+                    renderAsciiClock(currentSec);
+                    document.getElementById('ascii-timer-title').innerText = `Visualizando: ${activeTimer.name} (${activeTimer.owner})`;
+                } else {
+                    document.getElementById('ascii-container').innerText = "[ Ningún temporizador activo seleccionado ]";
+                }
+
+                // Refresh table live elapsed times smoothly
+                fetchTimers();
+            }, 500);
+        }
+
+        function addHistory(text) {
+            const time = new Date().toLocaleTimeString();
+            dbState.history.unshift({ timestamp: time, text });
+            const logContainer = document.getElementById('history-log');
+            logContainer.innerHTML = dbState.history.map(h => `<div><span class="text-slate-500">[${h.timestamp}]</span> ${h.text}</div>`).join('');
+        }
+    </script>
+</body>
+</html>

@@ -1,31 +1,48 @@
-- Uziel Gamarra
 # TimeControl-XP
 
-Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII en Python.
+Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII y evolucionado hacia una aplicación frontend interactiva con HTML, CSS y JavaScript.
 
-El proyecto busca evolucionar una idea inicial simple hacia una aplicación completa con autenticación, autorización, persistencia de datos, concurrencia, API REST, frontend, Docker y prácticas de Programación Extrema (XP).
+El proyecto busca transformar una idea inicial simple en una solución web funcional con autenticación simulada, roles, temporizadores concurrentes, historial de eventos y una interfaz para probar la experiencia de usuario en navegador.
 
 ## Objetivo
 
-Desarrollar una aplicación que permita a distintos usuarios crear y gestionar temporizadores de forma independiente.
+Desarrollar una aplicación web que permita a distintos usuarios crear y gestionar temporizadores de manera independiente.
 
-Cada usuario podrá iniciar sesión, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial.
+Cada usuario podrá iniciar sesión, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial de actividad. El sistema deberá soportar varios temporizadores simultáneos sin bloquear la experiencia del usuario.
 
-El sistema deberá permitir que varios temporizadores funcionen simultáneamente sin bloquearse entre sí.
+## Estado actual del proyecto
 
-## Requerimientos principales
+Este repositorio se encuentra en una etapa de prototipo frontend funcional, con una interfaz web completa para:
+
+- Login y registro simulados.
+- Roles ADMIN y USER.
+- Creación de temporizadores.
+- Inicio, pausa, reanudación y finalización de temporizadores.
+- Visualización de un reloj ASCII en tiempo real.
+- Historial de eventos y acciones.
+- Simulación de concurrencia con múltiples temporizadores activos.
+
+## Tecnologías utilizadas
+
+- HTML5
+- CSS3
+- JavaScript
+- Tailwind CSS (para la interfaz)
+- Reloj ASCII renderizado en navegador
+
+## Requerimientos principales del proyecto
 
 - Registro de usuarios.
 - Inicio y cierre de sesión.
 - Roles USER y ADMIN.
 - Gestión de temporizadores.
 - Historial de eventos.
-- Persistencia en base de datos.
+- Persistencia de datos.
 - API REST.
 - Autorización por usuario y rol.
 - Gestión de sesión.
-- Procesamiento concurrente o multihilo.
-- Frontend para probar las funcionalidades.
+- Procesamiento concurrente.
+- Frontend funcional en navegador.
 - Ejecución mediante Docker.
 - Desarrollo aplicando Programación Extrema.
 
@@ -41,13 +58,9 @@ Puede realizar todas las acciones de un usuario y además consultar usuarios y t
 
 ## Concurrencia
 
-El sistema podrá permitir la ejecución simultánea de múltiples temporizadores sin que uno bloquee a los dem�s.
+El sistema contempla la ejecución simultánea de múltiples temporizadores sin que uno bloquee al resto.
 
-La implementación podrá utilizar herramientas de Python cómo:
-
-- threading
-- asyncio
-- concurrent.futures
+En la versión actual, esta concurrencia se simula en el frontend mediante un ticker y lógica basada en tiempo real para varios temporizadores activos.
 
 ## Historias de usuario iniciales
 
@@ -69,35 +82,23 @@ Como usuario quiero consultar el historial de un temporizador.
 ### HU6
 Como administrador quiero consultar los usuarios y temporizadores del sistema.
 
-## Programaci�n Extrema
+## Programación Extrema
 
-Cada funcionalidad deber� atravesar el ciclo:
+Cada funcionalidad debería atravesar el ciclo:
 
 RED -> GREEN -> REFACTOR
 
 Se aplicarán historias de usuario, pruebas automatizadas, integración frecuente, revisión entre pares y refactorización continua.
 
-## Estado actual
-
-Actualmente existe un prototipo frontend funcional con:
-
-- Login y registro simulado.
-- Roles ADMIN y USER.
-- Creación y control de temporizadores.
-- Historial de eventos.
-- Reloj ASCII.
-- Simulación de múlltiples temporizadores activos.
-
-### Pendiente
+## Próximos pasos
 
 - Backend real en Python.
-- API REST.
-- Persistencia en base de datos.
-- Autenticación real.
-- Gestión de sesión real.
-- Autorización en backend.
+- API REST para persistencia y lógica del negocio.
+- Base de datos.
+- Autenticación y autorización reales.
+- Gestión de sesiones.
 - Concurrencia del lado servidor.
-- Docker.
+- Dockerización final.
 - Integración frontend-backend.
 
 ## Integrantes
@@ -107,4 +108,4 @@ Actualmente existe un prototipo frontend funcional con:
 
 ## Proyecto académico
 
-Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programación Extrema.
+Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programación Extrema, con una primera versión en frontend para validar la experiencia de uso y la lógica de temporizadores.

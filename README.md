@@ -1,32 +1,32 @@
 - Uziel Gamarra# TimeControl-XP
 
-Sistema web multiusuario para la gesti�n de temporizadores, desarrollado a partir de un reloj ASCII en Python.
+Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII en Python.
 
-El proyecto busca evolucionar una idea inicial simple hacia una aplicaci�n completa con autenticaci�n, autorizaci�n, persistencia de datos, concurrencia, API REST, frontend, Docker y pr�cticas de Programaci�n Extrema (XP).
+El proyecto busca evolucionar una idea inicial simple hacia una aplicación completa con autenticación, autorización, persistencia de datos, concurrencia, API REST, frontend, Docker y prácticas de Programación Extrema (XP).
 
 ## Objetivo
 
-Desarrollar una aplicaci�n que permita a distintos usuarios crear y gestionar temporizadores de forma independiente.
+Desarrollar una aplicación que permita a distintos usuarios crear y gestionar temporizadores de forma independiente.
 
-Cada usuario podr� iniciar sesi�n, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial.
+Cada usuario podrá iniciar sesión, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial.
 
-El sistema deber� permitir que varios temporizadores funcionen simult�neamente sin bloquearse entre s�.
+El sistema deberá permitir que varios temporizadores funcionen simultáneamente sin bloquearse entre sí.
 
 ## Requerimientos principales
 
 - Registro de usuarios.
-- Inicio y cierre de sesi�n.
+- Inicio y cierre de sesión.
 - Roles USER y ADMIN.
-- Gesti�n de temporizadores.
+- Gestión de temporizadores.
 - Historial de eventos.
 - Persistencia en base de datos.
 - API REST.
-- Autorizaci�n por usuario y rol.
-- Gesti�n de sesi�n.
+- Autorización por usuario y rol.
+- Gestión de sesión.
 - Procesamiento concurrente o multihilo.
 - Frontend para probar las funcionalidades.
-- Ejecuci�n mediante Docker.
-- Desarrollo aplicando Programaci�n Extrema.
+- Ejecución mediante Docker.
+- Desarrollo aplicando Programación Extrema.
 
 ## Roles
 
@@ -36,13 +36,13 @@ Puede crear, iniciar, pausar, reanudar y finalizar sus propios temporizadores.
 
 ### ADMIN
 
-Puede realizar todas las acciones de un usuario y adem�s consultar usuarios y temporizadores del sistema.
+Puede realizar todas las acciones de un usuario y además consultar usuarios y temporizadores del sistema.
 
 ## Concurrencia
 
-El sistema deber� permitir la ejecuci�n simult�nea de m�ltiples temporizadores sin que uno bloquee a los dem�s.
+El sistema podrá permitir la ejecución simultánea de múltiples temporizadores sin que uno bloquee a los dem�s.
 
-La implementaci�n podr� utilizar herramientas de Python como:
+La implementación podrá utilizar herramientas de Python cómo:
 
 - threading
 - asyncio
@@ -51,7 +51,7 @@ La implementaci�n podr� utilizar herramientas de Python como:
 ## Historias de usuario iniciales
 
 ### HU1
-Como usuario quiero registrarme e iniciar sesi�n para acceder al sistema.
+Como usuario quiero registrarme e iniciar sesión para acceder al sistema.
 
 ### HU2
 Como usuario quiero crear un temporizador para controlar una actividad.
@@ -60,7 +60,7 @@ Como usuario quiero crear un temporizador para controlar una actividad.
 Como usuario quiero iniciar, pausar y reanudar un temporizador.
 
 ### HU4
-Como usuario quiero ejecutar varios temporizadores simult�neamente.
+Como usuario quiero ejecutar varios temporizadores simultáneamente.
 
 ### HU5
 Como usuario quiero consultar el historial de un temporizador.
@@ -74,7 +74,7 @@ Cada funcionalidad deber� atravesar el ciclo:
 
 RED -> GREEN -> REFACTOR
 
-Se aplicar�n historias de usuario, pruebas automatizadas, integraci�n frecuente, revisi�n entre pares y refactorizaci�n continua.
+Se aplicarán historias de usuario, pruebas automatizadas, integración frecuente, revisión entre pares y refactorización continua.
 
 ## Estado actual
 
@@ -82,28 +82,28 @@ Actualmente existe un prototipo frontend funcional con:
 
 - Login y registro simulado.
 - Roles ADMIN y USER.
-- Creaci�n y control de temporizadores.
+- Creación y control de temporizadores.
 - Historial de eventos.
 - Reloj ASCII.
-- Simulaci�n de m�ltiples temporizadores activos.
+- Simulación de múlltiples temporizadores activos.
 
 ### Pendiente
 
 - Backend real en Python.
 - API REST.
 - Persistencia en base de datos.
-- Autenticaci�n real.
-- Gesti�n de sesi�n real.
-- Autorizaci�n en backend.
+- Autenticación real.
+- Gestión de sesión real.
+- Autorización en backend.
 - Concurrencia del lado servidor.
 - Docker.
-- Integraci�n frontend-backend.
+- Integración frontend-backend.
 
 ## Integrantes
 
 - Federico Montoro
 - Uziel Gamarra
 
-## Proyecto acad�mico
+## Proyecto académico
 
-Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programaci�n Extrema.
+Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programación Extrema.

@@ -1,4 +1,5 @@
-- Uziel Gamarra# TimeControl-XP
+- Uziel Gamarra
+# TimeControl-XP
 
 Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII en Python.
 

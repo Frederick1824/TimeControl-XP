@@ -485,31 +485,29 @@
         }
 
         // ASCII Rendering Engine adapted from reloj.py
-        function renderAsciiClock(totalSeconds) {
-            const hrs = Math.floor(totalSeconds / 3600);
-            const mins = Math.floor((totalSeconds % 3600) / 60);
-            const secs = totalSeconds % 60;
+function renderAsciiClock(totalSeconds) {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
 
-            const hStr = hrs.toString().padStart(2, '0');
-            const mStr = mins.toString().padStart(2, '0');
-            const sStr = secs.toString().padStart(2, '0');
+    const hStr = hrs.toString().padStart(2, '0');
+    const mStr = mins.toString().padStart(2, '0');
+    const sStr = secs.toString().padStart(2, '0');
 
-            const digits = [hStr[0], hStr[1], ':', mStr[0], mStr[1], ':', sStr[0], sStr[1]];
-            
-            let lines = ['', '', '', '', '', '', '', '', ''];
-            for (let i = 0; i < 9; i++) {
-                let lineStr = '';
-                digits.forEach(d => {
-                    const matrix = ASCII_DIGITS[d] || ASCII_DIGITS['0'];
-                    lineStr += (matrix[i] || "         ");
-                });
-                lines[i] = lineStr;
-            }
+    const digits = [hStr[0], hStr[1], ':', mStr[0], mStr[1], ':', sStr[0], sStr[1]];
 
-            document.getElementById('ascii-container.innerText') // handled safely below
-            document.getElementById('ascii-container').innerText = lines.join('\n');
-        }
+    let lines = ['', '', '', '', '', '', '', '', ''];
+    for (let i = 0; i < 9; i++) {
+        let lineStr = '';
+        digits.forEach(d => {
+            const matrix = ASCII_DIGITS[d] || ASCII_DIGITS['0'];
+            lineStr += (matrix[i] || "         ");
+        });
+        lines[i] = lineStr;
+    }
 
+    document.getElementById('ascii-container').innerText = lines.join('\n');
+}
         // Background ticker loop simulating independent concurrency threads
         function startTickerLoop() {
             setInterval(() => {

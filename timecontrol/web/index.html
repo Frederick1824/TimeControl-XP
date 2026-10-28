@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeControl · Reloj ASCII</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .ascii { font-family: 'JetBrains Mono', monospace; white-space: pre; line-height: 1.05; }
+  .glow { text-shadow: 0 0 20px rgba(129, 140, 248, 0.35); }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+<header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-5 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="bg-indigo-600 p-2 rounded-xl font-bold text-lg">⏱</div>
+      <div>
+        <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">TimeControl</h1>
+        <p class="text-xs text-slate-400">Reloj ASCII multiusuario</p>
+      </div>
+    </div>
+    <div id="nav-user" class="hidden items-center gap-3">
+      <span id="user-badge" class="text-xs px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30"></span>
+      <button onclick="logout()" class="text-sm bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg border border-rose-500/30 transition">Salir</button>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow max-w-6xl w-full mx-auto p-5">
+
+  <!-- AUTH -->
+  <div id="view-auth" class="max-w-md mx-auto mt-12 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <h2 id="auth-title" class="text-2xl font-bold text-center mb-1">Iniciar Sesión</h2>
+    <p class="text-sm text-slate-400 text-center mb-6">Accede para gestionar tus relojes</p>
+
+    <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Usuario</label>
+        <input id="auth-user" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="admin">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Contraseña</label>
+        <input id="auth-pass" type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="••••••••">
+      </div>
+      <button id="auth-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-600/25">Entrar</button>
+    </form>
+
+    <div class="mt-6 text-center text-sm text-slate-400">
+      <span id="auth-toggle-text">¿No tienes cuenta?</span>
+      <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-indigo-400 hover:underline ml-1 font-medium">Regístrate</button>
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-950/50 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+      <p class="font-semibold text-slate-300">Credenciales de prueba:</p>
+      <p>• <code class="text-indigo-400">admin</code> / <code class="text-indigo-400">admin123</code></p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="view-dash" class="hidden space-y-6">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Nuevo reloj -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+        <h3 class="text-lg font-bold mb-3">➕ Nuevo reloj</h3>
+        <p class="text-xs text-slate-400 mb-4">Cada reloj vive en el servidor. Varios clientes ven el mismo tiempo.</p>
+        <form onsubmit="createClock(event)" class="space-y-3">
+          <input id="clock-name" required placeholder="Ej. Pomodoro" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+          <button class="w-full bg-emerald-600 hover:bg-emerald-500 font-medium py-2.5 rounded-xl transition text-sm">Crear y ver</button>
+        </form>
+        <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400 flex justify-between">
+          <span>Rol: <strong id="dash-role" class="text-indigo-400">USER</strong></span>
+          <span>Activos: <strong id="dash-count" class="text-cyan-400">0</strong></span>
+        </div>
+      </div>
+
+      <!-- Visor ASCII -->
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center relative overflow-hidden min-h-[280px]">
+        <div class="absolute top-4 left-4 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Visor ASCII</span>
+        </div>
+        <div id="ascii" class="ascii text-indigo-400 glow text-xs sm:text-sm my-auto overflow-x-auto max-w-full">[ crea o selecciona un reloj ]</div>
+        <div id="ascii-title" class="text-xs text-slate-400 mt-3">Sin reloj seleccionado</div>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="text-lg font-bold">📋 Relojes en el servidor</h3>
+        <button onclick="fetchClocks()" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">🔄 Refrescar</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="p-3 rounded-l-xl">Reloj</th>
+              <th class="p-3">Iniciado</th>
+              <th class="p-3">Transcurrido</th>
+              <th class="p-3 text-right rounded-r-xl">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clocks-body" class="divide-y divide-slate-800/60"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center space-y-4">
+    <div id="modal-icon" class="text-3xl">ℹ️</div>
+    <h4 id="modal-title" class="text-lg font-bold">Mensaje</h4>
+    <p id="modal-msg" class="text-sm text-slate-300"></p>
+    <button onclick="document.getElementById('modal').classList.add('hidden')" class="w-full bg-indigo-600 hover:bg-indigo-500 font-medium py-2 rounded-xl transition text-sm">OK</button>
+  </div>
+</div>
+
+<script>
+const AUTH = "http://localhost:8001";
+const CLOCK = "http://localhost:8002";
+
+let user = null, registerMode = false, activeClock = null, ticker = null;
+let clockCache = {}; // id -> {name, started_at}
+
+// --- MATRIZ ASCII (heredada de tu reloj.py) ---
+const D = {
+'0':["|‾‾‾‾‾‾‾|","| [ \\\\] |","| [\\ \\] |","| [\\\\ ] |","| [ \\\\] |","| [\\ \\] |","| [\\\\ ] |","| [ \\\\] |","|_______|"],
+'1':["   ____  ","  /   |  "," / /| |  ","/ / | |  ","\\/  | |  ","  __| |__"," |       |","         ","         "],
+'2':["   ____  ","  /    | "," / /\\  | "," \\/ / /  ","   / /   "," _/ /____","|        |","         ","         "],
+'3':["  _______","  _____ |","      | |","  ____| |","  _____ |","      | |","  _____ |","         ","         "],
+'4':["  | |  | |","  | |  | |","  | |__| |","  |      |","  ‾‾‾‾‾| |","       | |","       | |","         ","         "],
+'5':["  ______ ","  | ____ ","  | |    ","  | |___ ","  |     |","  ‾‾‾‾| |","      | |","  ‾‾‾‾  |","  ‾‾‾‾‾‾ "],
+'6':["   _______","   | _____","   | |    ","   | |    ","   | |‾‾‾|","   | |   |","   | |___","         ","         "],
+'7':["_______  ","\\ _____  "," \\ \\     ","  \\ \\    "," ‾‾\\ \\‾‾‾"," ‾‾ \\ \\‾‾","     \\ \\ ","      \\ \\","       \\ \\"],
+'8':[" _______ "," | ___ | "," | [ ] | "," | ‾‾‾ | "," | ___ | "," | [ ] | "," | ‾‾‾ | "," |_____| "," ‾‾‾‾‾‾  "],
+'9':["_______  ","|     |  ","| | | |  ","| ‾‾‾ |  ","\\ \\‾‾‾   "," \\ \\     ","  \\ \\___ ","  |    | ","         "],
+':':["   "," █ "," █ ","   "," + ","   "," █ "," █ ","   "]
+};
+
+function renderAscii(totalSec) {
+  const h = String(Math.floor(totalSec/3600)%100).padStart(2,'0');
+  const m = String(Math.floor(totalSec/60)%60).padStart(2,'0');
+  const s = String(totalSec%60).padStart(2,'0');
+  const chars = [h[0],h[1],':',m[0],m[1],':',s[0],s[1]];
+  let out = [];
+  for (let row = 0; row < 9; row++) {
+    out.push(chars.map(c => (D[c]||D['0'])[row]).join(' '));
+  }
+  document.getElementById('ascii').textContent = out.join('\n');
+}
+
+// --- AUTH ---
+function showModal(title, msg, icon='ℹ️') {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-icon').textContent = icon;
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function toggleAuthMode() {
+  registerMode = !registerMode;
+  document.getElementById('auth-title').textContent = registerMode ? 'Crear cuenta' : 'Iniciar Sesión';
+  document.getElementById('auth-submit').textContent = registerMode ? 'Registrarse' : 'Entrar';
+  document.getElementById('auth-toggle-text').textContent = registerMode ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?';
+  document.getElementById('auth-toggle-btn').textContent = registerMode ? 'Inicia sesión' : 'Regístrate';
+}
+
+async function handleAuth(e) {
+  e.preventDefault();
+  const username = document.getElementById('auth-user').value.trim();
+  const password = document.getElementById('auth-pass').value.trim();
+  const path = registerMode ? '/register' : '/login';
+  try {
+    const r = await fetch(AUTH + path, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await r.json();
+    if (!r.ok) return showModal('Error', data.detail || 'Falló', '❌');
+
+    if (registerMode) {
+      showModal('Listo', 'Usuario creado. Ahora inicia sesión.', '✅');
+      toggleAuthMode();
+      return;
+    }
+    user = data;
+    localStorage.setItem('tc_token', data.token);
+    enterDashboard();
+  } catch (err) {
+    showModal('Error de red', '¿Está el auth-svc corriendo?', '❌');
+  }
+}
+
+function enterDashboard() {
+  document.getElementById('view-auth').classList.add('hidden');
+  document.getElementById('view-dash').classList.remove('hidden');
+  document.getElementById('nav-user').classList.remove('hidden');
+  document.getElementById('nav-user').classList.add('flex');
+  document.getElementById('user-badge').textContent = `${user.username} (${user.role})`;
+  document.getElementById('dash-role').textContent = user.role;
+  fetchClocks();
+  startTicker();
+}
+
+function logout() {
+  user = null;
+  localStorage.removeItem('tc_token');
+  activeClock = null;
+  if (ticker) clearInterval(ticker);
+  document.getElementById('view-dash').classList.add('hidden');
+  document.getElementById('nav-user').classList.add('hidden');
+  document.getElementById('nav-user').classList.remove('flex');
+  document.getElementById('view-auth').classList.remove('hidden');
+}
+
+// --- CLOCKS ---
+async function createClock(e) {
+  e.preventDefault();
+  const name = document.getElementById('clock-name').value.trim();
+  try {
+    const r = await fetch(CLOCK + '/clocks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, owner: user.username})
+    });
+    const c = await r.json();
+    document.getElementById('clock-name').value = '';
+    activeClock = c.id;
+    clockCache[c.id] = c;
+    await fetchClocks();
+  } catch (err) {
+    showModal('Error', 'No se pudo crear el reloj', '❌');
+  }
+}
+
+async function fetchClocks() {
+  try {
+    const r = await fetch(CLOCK + '/clocks');
+    const list = await r.json();
+    clockCache = {};
+    list.forEach(c => clockCache[c.id] = c);
+    renderTable(list);
+    document.getElementById('dash-count').textContent = list.length;
+    if (!activeClock && list.length) activeClock = list[0].id;
+  } catch (err) {
+    console.warn('clock-svc no responde');
+  }
+}
+
+function renderTable(list) {
+  const body = document.getElementById('clocks-body');
+  if (!list.length) {
+    body.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No hay relojes. Crea uno arriba.</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(c => {
+    const sec = Math.floor(c.elapsed);
+    const hh = String(Math.floor(sec/3600)).padStart(2,'0');
+    const mm = String(Math.floor(sec/60)%60).padStart(2,'0');
+    const ss = String(sec%60).padStart(2,'0');
+    const active = c.id === activeClock;
+    return `<tr class="hover:bg-slate-800/30 transition ${active?'bg-indigo-950/20':''}">
+      <td class="p-3 cursor-pointer" onclick="selectClock('${c.id}')">
+        <div class="font-medium flex items-center gap-2">${c.name} ${active?'📍':''}</div>
+        <div class="text-xs text-slate-500 font-mono">${c.id}</div>
+      </td>
+      <td class="p-3 text-slate-400 text-xs">${new Date(c.started_at*1000).toLocaleTimeString()}</td>
+      <td class="p-3 font-mono text-indigo-300 font-semibold">${hh}:${mm}:${ss}</td>
+      <td class="p-3 text-right">
+        <button onclick="selectClock('${c.id}')" class="px-2.5 py-1 bg-indigo-600/20 text-indigo-300 rounded border border-indigo-500/30 text-xs hover:bg-indigo-600/30">Ver</button>
+        <button onclick="deleteClock('${c.id}')" class="px-2.5 py-1 bg-rose-600/20 text-rose-300 rounded border border-rose-500/30 text-xs hover:bg-rose-600/30 ml-1">Borrar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function selectClock(id) {
+  activeClock = id;
+  fetchClocks();
+}
+
+async function deleteClock(id) {
+  await fetch(CLOCK + '/clocks/' + id, {method: 'DELETE'});
+  if (activeClock === id) activeClock = null;
+  await fetchClocks();
+}
+
+function startTicker() {
+  if (ticker) clearInterval(ticker);
+  ticker = setInterval(async () => {
+    if (!user) return;
+    await fetchClocks();
+    const c = clockCache[activeClock];
+    if (c) {
+      renderAscii(Math.floor(c.elapsed));
+      document.getElementById('ascii-title').textContent =
+        `Viendo: ${c.name} — iniciado ${new Date(c.started_at*1000).toLocaleTimeString()}`;
+    } else {
+      document.getElementById('ascii').textContent = '[ crea o selecciona un reloj ]';
+      document.getElementById('ascii-title').textContent = 'Sin reloj seleccionado';
+    }
+  }, 500);
+}
+
+// auto-login si hay token
+window.addEventListener('load', () => {
+  const tok = localStorage.getItem('tc_token');
+  if (tok) {
+    try {
+      const payload = JSON.parse(atob(tok.split('.')[1]));
+      user = {username: payload.sub, role: payload.role, token: tok};
+      enterDashboard();
+    } catch(e) { localStorage.removeItem('tc_token'); }
+  }
+});
+</script>
+</body>
+</html>

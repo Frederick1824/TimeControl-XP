@@ -1,0 +1,25 @@
+services:
+  auth-svc:
+    build: ./auth-svc
+    ports:
+      - "8001:8001"
+    environment:
+      - JWT_SECRET=cambia-esto-en-produccion
+    volumes:
+      - auth-data:/data
+
+  clock-svc:
+    build: ./clock-svc
+    ports:
+      - "8002:8002"
+
+  web:
+    build: ./web
+    ports:
+      - "8000:80"
+    depends_on:
+      - auth-svc
+      - clock-svc
+
+volumes:
+  auth-data:

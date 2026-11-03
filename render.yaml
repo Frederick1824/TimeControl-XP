@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: timecontrol-xp
+    runtime: docker
+    plan: free
+    rootDir: timecontrol/web
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: AUTH_HOSTPORT
+        fromService:
+          type: pserv
+          name: timecontrol-auth
+          property: hostport
+      - key: CLOCK_HOSTPORT
+        fromService:
+          type: pserv
+          name: timecontrol-clock
+          property: hostport
+
+  - type: pserv
+    name: timecontrol-auth
+    runtime: docker
+    plan: starter
+    rootDir: timecontrol/auth-svc
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: timecontrol-shared
+    disk:
+      name: auth-data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: pserv
+    name: timecontrol-clock
+    runtime: docker
+    plan: starter
+    rootDir: timecontrol/clock-svc
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: timecontrol-shared
+    disk:
+      name: clock-data
+      mountPath: /data
+      sizeGB: 1
+
+envVarGroups:
+  - name: timecontrol-shared
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true

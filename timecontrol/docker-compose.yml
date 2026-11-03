@@ -12,6 +12,10 @@ services:
     build: ./clock-svc
     ports:
       - "8002:8002"
+    environment:
+      - JWT_SECRET=cambia-esto-en-produccion
+    volumes:
+      - clock-data:/data
 
   web:
     build: ./web
@@ -23,3 +27,4 @@ services:
 
 volumes:
   auth-data:
+  clock-data:

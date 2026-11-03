@@ -258,7 +258,8 @@ button{cursor:pointer}
 
         <div class="demo">
           Rol actual: <strong id="dash-role"></strong><br>
-          <span id="scope-hint"></span>
+          <span id="scope-hint"></span><br>
+          <span id="sync-hint">Sincronización pendiente</span>
         </div>
       </aside>
     </div>
@@ -298,6 +299,8 @@ let activeClock = null;
 let clockCache = {};
 let socket = null;
 let ticker = null;
+let serverOffsetMs = 0;
+let lastSyncRttMs = null;
 
 const D = {
 '0':["|‾‾‾‾‾‾‾|","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","|_______|"],
@@ -327,12 +330,13 @@ function renderAscii(totalSec) {
   document.getElementById('ascii').textContent = out.join('\n');
 }
 
-function formatTime(value) {
-  const sec = Math.max(0, Math.floor(value || 0));
-  const hh = String(Math.floor(sec / 3600)).padStart(2,'0');
-  const mm = String(Math.floor(sec / 60) % 60).padStart(2,'0');
-  const ss = String(sec % 60).padStart(2,'0');
-  return `${hh}:${mm}:${ss}`;
+function formatTime(value, withMs = true) {
+  const totalMs = Math.max(0, Math.floor((value || 0) * 1000));
+  const hh = String(Math.floor(totalMs / 3600000)).padStart(2,'0');
+  const mm = String(Math.floor(totalMs / 60000) % 60).padStart(2,'0');
+  const ss = String(Math.floor(totalMs / 1000) % 60).padStart(2,'0');
+  const ms = String(totalMs % 1000).padStart(3,'0');
+  return withMs ? `${hh}:${mm}:${ss}.${ms}` : `${hh}:${mm}:${ss}`;
 }
 
 function currentElapsed(clock) {
@@ -341,8 +345,8 @@ function currentElapsed(clock) {
 
   if (clock.status !== 'RUNNING') return base;
 
-  const receivedAt = clock._receivedAt || Date.now() / 1000;
-  return base + (Date.now() / 1000 - receivedAt);
+  const receivedAt = clock._receivedAt || ((Date.now() + serverOffsetMs) / 1000);
+  return base + (((Date.now() + serverOffsetMs) / 1000) - receivedAt);
 }
 
 function authHeaders() {
@@ -442,6 +446,43 @@ async function handleAuth(event) {
   }
 }
 
+async function syncWithServer(samples = 5) {
+  const offsets = [];
+  const rtts = [];
+
+  for (let i = 0; i < samples; i++) {
+    const t0 = performance.now();
+
+    try {
+      const response = await fetch(CLOCK + '/time');
+      const data = await response.json();
+      const t1 = performance.now();
+
+      const rtt = t1 - t0;
+      const midpointLocalEpochMs = Date.now() - (rtt / 2);
+      const offset = data.server_time_ms - midpointLocalEpochMs;
+
+      offsets.push(offset);
+      rtts.push(rtt);
+    } catch {}
+  }
+
+  if (!offsets.length) {
+    document.getElementById('sync-hint').textContent = 'Sin sincronización con servidor';
+    return;
+  }
+
+  offsets.sort((a,b) => a - b);
+  rtts.sort((a,b) => a - b);
+
+  serverOffsetMs = offsets[Math.floor(offsets.length / 2)];
+  lastSyncRttMs = rtts[Math.floor(rtts.length / 2)];
+
+  const sign = serverOffsetMs >= 0 ? '+' : '';
+  document.getElementById('sync-hint').textContent =
+    `Offset servidor: ${sign}${serverOffsetMs.toFixed(1)} ms · RTT: ${lastSyncRttMs.toFixed(1)} ms`;
+}
+
 function enterDashboard() {
   document.getElementById('view-auth').classList.add('hidden');
   document.getElementById('view-dash').classList.remove('hidden');
@@ -455,9 +496,11 @@ function enterDashboard() {
       ? 'ADMIN puede observar todos los relojes.'
       : 'USER solo gestiona sus propios relojes.';
 
-  fetchClocks();
+  syncWithServer().then(fetchClocks);
   connectWebSocket();
   startTicker();
+
+  setInterval(syncWithServer, 15000);
 }
 
 function logout() {
@@ -524,7 +567,7 @@ async function fetchClocks() {
 
   try {
     const list = await api('/clocks');
-    const now = Date.now() / 1000;
+    const now = (Date.now() + serverOffsetMs) / 1000;
 
     clockCache = {};
 
@@ -570,7 +613,7 @@ function renderHero() {
   document.getElementById('clock-title').textContent = clock.name;
   document.getElementById('clock-owner').textContent =
     `${clock.owner} · ${clock.status}`;
-  document.getElementById('big-time').textContent = formatTime(elapsed);
+  document.getElementById('big-time').textContent = formatTime(elapsed, true);
 
   renderAscii(elapsed);
 
@@ -612,7 +655,7 @@ function renderCards(list) {
       </div>
 
       <div class="card-time" data-clock-time="${clock.id}">
-        ${formatTime(currentElapsed(clock))}
+        ${formatTime(currentElapsed(clock), true)}
       </div>
 
       <div class="card-actions" onclick="event.stopPropagation()">
@@ -682,7 +725,7 @@ function startTicker() {
 
     document.querySelectorAll('[data-clock-time]').forEach(node => {
       const clock = clockCache[node.dataset.clockTime];
-      if (clock) node.textContent = formatTime(currentElapsed(clock));
+      if (clock) node.textContent = formatTime(currentElapsed(clock), true);
     });
   }, 1000);
 }

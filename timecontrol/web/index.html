@@ -4,134 +4,300 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TimeControl XP</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: 'Inter', sans-serif; }
-  .ascii { font-family: 'JetBrains Mono', monospace; white-space: pre; line-height: 1.05; }
-  .glow { text-shadow: 0 0 20px rgba(129, 140, 248, 0.35); }
+:root{
+  --bg:#07111f;
+  --panel:#0d1828;
+  --panel2:#111e30;
+  --line:#213049;
+  --text:#edf4ff;
+  --muted:#8ea0ba;
+  --cyan:#48d7ff;
+  --violet:#8b7cff;
+  --green:#42d392;
+  --yellow:#f7c45c;
+  --red:#ff6b7c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,system-ui,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 20% 0%,rgba(72,215,255,.08),transparent 35%),
+    radial-gradient(circle at 90% 10%,rgba(139,124,255,.10),transparent 30%),
+    var(--bg);
+}
+button,input{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.shell{max-width:1180px;margin:auto;padding:0 24px}
+.topbar{
+  height:72px;
+  display:flex;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  background:rgba(7,17,31,.78);
+  backdrop-filter:blur(14px);
+  position:sticky;top:0;z-index:20;
+}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;width:100%}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--violet),var(--cyan));
+  box-shadow:0 10px 30px rgba(72,215,255,.18);
+  font-weight:800;color:#06121f;
+}
+.brand h1{font-size:17px;margin:0}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.userline{display:flex;gap:12px;align-items:center}
+.pill{
+  border:1px solid var(--line);border-radius:999px;
+  padding:7px 11px;color:#c9d5e7;font-size:12px;background:#0b1625;
+}
+.ws-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;background:#6e7c91}
+.ws-dot.ok{background:var(--green);box-shadow:0 0 10px rgba(66,211,146,.8)}
+.btn{
+  border:1px solid var(--line);background:#101d2e;color:var(--text);
+  border-radius:10px;padding:9px 13px;transition:.18s;
+}
+.btn:hover{transform:translateY(-1px);border-color:#38506f}
+.btn.primary{
+  border:none;background:linear-gradient(135deg,var(--violet),#607dff);
+  box-shadow:0 8px 24px rgba(96,125,255,.22);
+}
+.btn.green{border-color:rgba(66,211,146,.4);color:#9ff1c8}
+.btn.yellow{border-color:rgba(247,196,92,.45);color:#ffe0a1}
+.btn.red{border-color:rgba(255,107,124,.4);color:#ffb0ba}
+.main{padding:34px 24px 60px}
+.auth-card{
+  max-width:420px;margin:70px auto 0;
+  border:1px solid var(--line);background:rgba(13,24,40,.92);
+  border-radius:22px;padding:30px;box-shadow:0 28px 70px rgba(0,0,0,.28);
+}
+.auth-card h2{margin:0 0 6px}
+.auth-card p{color:var(--muted);font-size:14px;margin-top:0}
+.field{margin:15px 0}
+.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
+.field input,.create-row input{
+  width:100%;border:1px solid var(--line);background:#081321;color:var(--text);
+  border-radius:12px;padding:12px 13px;outline:none;
+}
+.field input:focus,.create-row input:focus{border-color:#5573ff}
+.auth-foot{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+.auth-foot button{background:none;border:none;color:var(--cyan)}
+.demo{
+  margin-top:22px;padding:12px;border-radius:12px;background:#081321;
+  color:var(--muted);font-size:12px;border:1px solid rgba(255,255,255,.05)
+}
+.dashboard{display:grid;gap:18px}
+.hero-grid{display:grid;grid-template-columns:1.65fr .9fr;gap:18px}
+.panel{
+  border:1px solid var(--line);background:linear-gradient(180deg,rgba(17,30,48,.96),rgba(10,21,36,.96));
+  border-radius:20px;
+}
+.hero{padding:28px;min-height:330px;position:relative;overflow:hidden}
+.hero:after{
+  content:"";position:absolute;width:280px;height:280px;border-radius:50%;
+  right:-120px;top:-140px;background:rgba(72,215,255,.07);filter:blur(10px)
+}
+.eyebrow{
+  color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase
+}
+.clock-title{font-size:22px;margin:15px 0 4px}
+.clock-owner{color:var(--muted);font-size:13px}
+.big-time{
+  font:700 clamp(44px,8vw,86px)/1 JetBrains Mono,monospace;
+  letter-spacing:-.05em;margin:34px 0 24px;
+  background:linear-gradient(90deg,#fff,var(--cyan),#ad9fff);
+  -webkit-background-clip:text;color:transparent;
+}
+.hero-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ascii-wrap{
+  margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)
+}
+.ascii-label{font-size:11px;color:var(--muted);margin-bottom:10px}
+.ascii{
+  white-space:pre;overflow:auto;margin:0;
+  font:500 8px/1.05 JetBrains Mono,monospace;color:#7294c8;opacity:.82
+}
+.side{padding:22px}
+.side h3{margin:0 0 6px;font-size:16px}
+.side p{font-size:12px;color:var(--muted);line-height:1.5}
+.create-row{display:grid;gap:10px;margin-top:18px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.stat{padding:14px;border-radius:14px;background:#0a1524;border:1px solid rgba(255,255,255,.05)}
+.stat strong{font-size:22px;display:block}
+.stat span{color:var(--muted);font-size:11px}
+.section{padding:22px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.section-head h3{margin:0}
+.section-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.timer-card{
+  padding:17px;border:1px solid rgba(255,255,255,.07);border-radius:16px;background:#0a1524;
+  transition:.18s;
+}
+.timer-card:hover{transform:translateY(-2px);border-color:#344a68}
+.timer-card.active{outline:1px solid rgba(72,215,255,.55);background:#0b1928}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-name{font-weight:700}
+.card-owner{font-size:11px;color:var(--muted);margin-top:4px}
+.badge{font-size:10px;padding:5px 7px;border-radius:999px;border:1px solid var(--line)}
+.badge.RUNNING{color:#aaf0ce;border-color:rgba(66,211,146,.35)}
+.badge.PAUSED{color:#ffe0a1;border-color:rgba(247,196,92,.35)}
+.badge.STOPPED{color:#b9c5d8}
+.card-time{font:700 28px/1 JetBrains Mono;margin:24px 0 16px}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.card-actions .btn{padding:7px 9px;font-size:11px}
+.empty{grid-column:1/-1;padding:30px;text-align:center;color:var(--muted)}
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.68);display:grid;place-items:center;z-index:50;padding:20px
+}
+.modal-card{
+  width:min(520px,100%);max-height:80vh;overflow:auto;
+  background:#0e1b2c;border:1px solid var(--line);border-radius:18px;padding:20px;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{margin:0}
+.event{padding:12px;border-radius:12px;background:#091422;margin-top:9px}
+.event strong{color:#aebfff}
+.event small{display:block;color:var(--muted);margin-top:3px}
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .cards{grid-template-columns:1fr}
+  .shell{padding-left:15px;padding-right:15px}
+  .userline .pill:first-child{display:none}
+}
 </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+<body>
 
-<header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
-  <div class="max-w-6xl mx-auto px-5 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <div class="bg-indigo-600 p-2 rounded-xl font-bold text-lg">⏱</div>
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <div class="brand">
+      <div class="logo">TC</div>
       <div>
-        <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">TimeControl XP</h1>
-        <p class="text-xs text-slate-400">Reloj ASCII multiusuario</p>
+        <h1>TimeControl XP</h1>
+        <p>Temporizadores multiusuario en tiempo real</p>
       </div>
     </div>
-    <div id="nav-user" class="hidden items-center gap-3">
-      <span id="user-badge" class="text-xs px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30"></span>
-      <button onclick="logout()" class="text-sm bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 px-3 py-1.5 rounded-lg border border-rose-500/30 transition">Salir</button>
+    <div id="nav-user" class="userline hidden">
+      <div class="pill"><span id="ws-dot" class="ws-dot"></span><span id="ws-text">Realtime offline</span></div>
+      <div id="user-badge" class="pill"></div>
+      <button class="btn red" onclick="logout()">Salir</button>
     </div>
   </div>
 </header>
 
-<main class="flex-grow max-w-6xl w-full mx-auto p-5">
-
-  <section id="view-auth" class="max-w-md mx-auto mt-12 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-    <h2 id="auth-title" class="text-2xl font-bold text-center mb-1">Iniciar sesión</h2>
-    <p class="text-sm text-slate-400 text-center mb-6">Accedé para gestionar tus relojes</p>
-
-    <form onsubmit="handleAuth(event)" class="space-y-4">
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Usuario</label>
-        <input id="auth-user" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="fede">
+<main class="shell main">
+  <section id="view-auth" class="auth-card">
+    <span class="eyebrow">Acceso seguro</span>
+    <h2 id="auth-title">Iniciar sesión</h2>
+    <p>Ingresá para gestionar tus temporizadores.</p>
+    <form onsubmit="handleAuth(event)">
+      <div class="field">
+        <label>Usuario</label>
+        <input id="auth-user" required placeholder="fede">
       </div>
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Contraseña</label>
-        <input id="auth-pass" type="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition" placeholder="••••••••">
+      <div class="field">
+        <label>Contraseña</label>
+        <input id="auth-pass" type="password" required placeholder="••••••••">
       </div>
-      <button id="auth-submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 rounded-xl transition">Entrar</button>
+      <button id="auth-submit" class="btn primary" style="width:100%">Entrar</button>
     </form>
-
-    <div class="mt-6 text-center text-sm text-slate-400">
+    <div class="auth-foot">
       <span id="auth-toggle-text">¿No tenés cuenta?</span>
-      <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-indigo-400 hover:underline ml-1 font-medium">Registrate</button>
+      <button id="auth-toggle-btn" onclick="toggleAuthMode()">Registrate</button>
     </div>
-
-    <div class="mt-8 p-4 bg-slate-950/50 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
-      <p class="font-semibold text-slate-300">ADMIN demo:</p>
-      <p><code class="text-indigo-400">admin</code> / <code class="text-indigo-400">admin123</code></p>
-    </div>
+    <div class="demo">Demo ADMIN: <strong>admin</strong> / <strong>admin123</strong></div>
   </section>
 
-  <section id="view-dash" class="hidden space-y-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-        <h3 class="text-lg font-bold mb-3">➕ Nuevo reloj</h3>
-        <p class="text-xs text-slate-400 mb-4">El propietario se obtiene del JWT, no del navegador.</p>
-        <form onsubmit="createClock(event)" class="space-y-3">
-          <input id="clock-name" required placeholder="Ej. Pomodoro" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
-          <button class="w-full bg-emerald-600 hover:bg-emerald-500 font-medium py-2.5 rounded-xl transition text-sm">Crear reloj</button>
+  <section id="view-dash" class="dashboard hidden">
+    <div class="hero-grid">
+      <article class="panel hero">
+        <span class="eyebrow">Temporizador seleccionado</span>
+        <div id="clock-title" class="clock-title">Sin reloj seleccionado</div>
+        <div id="clock-owner" class="clock-owner">Creá uno para empezar</div>
+        <div id="big-time" class="big-time">00:00:00</div>
+        <div id="hero-actions" class="hero-actions"></div>
+
+        <div class="ascii-wrap">
+          <div class="ascii-label">RELOJ ASCII ORIGINAL</div>
+          <pre id="ascii" class="ascii">[ sin reloj ]</pre>
+        </div>
+      </article>
+
+      <aside class="panel side">
+        <span class="eyebrow">Nuevo temporizador</span>
+        <h3>¿Qué querés medir?</h3>
+        <p>El propietario se toma del JWT. El frontend no decide permisos.</p>
+
+        <form class="create-row" onsubmit="createClock(event)">
+          <input id="clock-name" required placeholder="Ej. Estudio de Arquitectura">
+          <button class="btn primary">Crear y comenzar</button>
         </form>
-        <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-400 flex justify-between">
-          <span>Rol: <strong id="dash-role" class="text-indigo-400">USER</strong></span>
-          <span>Visibles: <strong id="dash-count" class="text-cyan-400">0</strong></span>
-        </div>
-      </div>
 
-      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center relative overflow-hidden min-h-[280px]">
-        <div class="absolute top-4 left-4 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Visor ASCII</span>
+        <div class="stats">
+          <div class="stat">
+            <strong id="stat-visible">0</strong>
+            <span>Relojes visibles</span>
+          </div>
+          <div class="stat">
+            <strong id="stat-running">0</strong>
+            <span>En ejecución</span>
+          </div>
         </div>
-        <div id="ascii" class="ascii text-indigo-400 glow text-xs sm:text-sm my-auto overflow-x-auto max-w-full">[ creá o seleccioná un reloj ]</div>
-        <div id="ascii-title" class="text-xs text-slate-400 mt-3">Sin reloj seleccionado</div>
-      </div>
+
+        <div class="demo">
+          Rol actual: <strong id="dash-role"></strong><br>
+          <span id="scope-hint"></span>
+        </div>
+      </aside>
     </div>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-      <div class="flex justify-between items-center mb-5">
+    <section class="panel section">
+      <div class="section-head">
         <div>
-          <h3 class="text-lg font-bold">📋 Relojes</h3>
-          <p id="scope-hint" class="text-xs text-slate-500 mt-1"></p>
+          <h3 id="list-title">Mis temporizadores</h3>
+          <p>Los cambios de otros clientes llegan mediante WebSocket.</p>
         </div>
-        <button onclick="fetchClocks()" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">🔄 Refrescar</button>
+        <button class="btn" onclick="fetchClocks()">Sincronizar</button>
       </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-            <tr>
-              <th class="p-3">Reloj</th>
-              <th class="p-3">Propietario</th>
-              <th class="p-3">Estado</th>
-              <th class="p-3">Transcurrido</th>
-              <th class="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="clocks-body" class="divide-y divide-slate-800/60"></tbody>
-        </table>
-      </div>
-    </div>
+      <div id="clock-cards" class="cards"></div>
+    </section>
   </section>
 </main>
 
-<div id="modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl space-y-4">
-    <div class="flex justify-between items-center">
-      <h4 id="modal-title" class="text-lg font-bold">Mensaje</h4>
-      <button onclick="closeModal()" class="text-slate-400 hover:text-white">✕</button>
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="modal-title">Detalle</h3>
+      <button class="btn" onclick="closeModal()">Cerrar</button>
     </div>
-    <div id="modal-msg" class="text-sm text-slate-300 max-h-80 overflow-auto"></div>
-    <button onclick="closeModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 font-medium py-2 rounded-xl transition text-sm">Cerrar</button>
+    <div id="modal-msg"></div>
   </div>
 </div>
 
 <script>
 const AUTH = "http://localhost:8001";
 const CLOCK = "http://localhost:8002";
+const WS = "ws://localhost:8002/ws";
 
 let user = null;
 let token = null;
 let registerMode = false;
 let activeClock = null;
-let ticker = null;
 let clockCache = {};
+let socket = null;
+let ticker = null;
 
 const D = {
 '0':["|‾‾‾‾‾‾‾|","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","|_______|"],
@@ -148,10 +314,10 @@ const D = {
 };
 
 function renderAscii(totalSec) {
-  const h = String(Math.floor(totalSec / 3600) % 100).padStart(2, '0');
-  const m = String(Math.floor(totalSec / 60) % 60).padStart(2, '0');
-  const s = String(totalSec % 60).padStart(2, '0');
-  const chars = [h[0], h[1], ':', m[0], m[1], ':', s[0], s[1]];
+  const h = String(Math.floor(totalSec / 3600) % 100).padStart(2,'0');
+  const m = String(Math.floor(totalSec / 60) % 60).padStart(2,'0');
+  const s = String(totalSec % 60).padStart(2,'0');
+  const chars = [h[0],h[1],':',m[0],m[1],':',s[0],s[1]];
   const out = [];
 
   for (let row = 0; row < 9; row++) {
@@ -161,11 +327,64 @@ function renderAscii(totalSec) {
   document.getElementById('ascii').textContent = out.join('\n');
 }
 
+function formatTime(value) {
+  const sec = Math.max(0, Math.floor(value || 0));
+  const hh = String(Math.floor(sec / 3600)).padStart(2,'0');
+  const mm = String(Math.floor(sec / 60) % 60).padStart(2,'0');
+  const ss = String(sec % 60).padStart(2,'0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+function currentElapsed(clock) {
+  if (!clock) return 0;
+  const base = Number(clock.elapsed || 0);
+
+  if (clock.status !== 'RUNNING') return base;
+
+  const receivedAt = clock._receivedAt || Date.now() / 1000;
+  return base + (Date.now() / 1000 - receivedAt);
+}
+
 function authHeaders() {
   return {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + token
+    'Content-Type':'application/json',
+    'Authorization':'Bearer ' + token
   };
+}
+
+function setRealtime(ok, text) {
+  document.getElementById('ws-dot').classList.toggle('ok', ok);
+  document.getElementById('ws-text').textContent = text;
+}
+
+function connectWebSocket() {
+  if (!token) return;
+
+  if (socket) socket.close();
+
+  socket = new WebSocket(WS + '?token=' + encodeURIComponent(token));
+
+  socket.onopen = () => setRealtime(true, 'Realtime conectado');
+
+  socket.onmessage = async event => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'clock_changed') {
+      if (user.role === 'ADMIN' || data.owner === user.username) {
+        await fetchClocks();
+      }
+    }
+  };
+
+  socket.onclose = () => {
+    setRealtime(false, 'Realtime desconectado');
+
+    if (token) {
+      setTimeout(connectWebSocket, 1800);
+    }
+  };
+
+  socket.onerror = () => setRealtime(false, 'Realtime con error');
 }
 
 function closeModal() {
@@ -195,74 +414,72 @@ async function handleAuth(event) {
 
   try {
     const response = await fetch(AUTH + path, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({username, password})
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      showModal('Error', data.detail || 'No se pudo completar la operación');
+      showModal('No se pudo ingresar', data.detail || 'Error');
       return;
     }
 
     if (registerMode) {
-      showModal('Usuario creado', 'La cuenta fue creada. Ahora podés iniciar sesión.');
+      showModal('Cuenta creada', '<p>Usuario registrado. Ya podés iniciar sesión.</p>');
       toggleAuthMode();
       return;
     }
 
-    user = {
-      username: data.username,
-      role: data.role
-    };
     token = data.token;
+    user = {username:data.username, role:data.role};
 
     localStorage.setItem('tc_token', token);
     enterDashboard();
   } catch {
-    showModal('Error de red', 'No responde auth-svc en el puerto 8001.');
+    showModal('Sin conexión', '<p>No responde el servicio de autenticación.</p>');
   }
-}
-
-function logout() {
-  user = null;
-  token = null;
-  activeClock = null;
-  clockCache = {};
-
-  localStorage.removeItem('tc_token');
-
-  if (ticker) clearInterval(ticker);
-
-  document.getElementById('view-dash').classList.add('hidden');
-  document.getElementById('nav-user').classList.add('hidden');
-  document.getElementById('nav-user').classList.remove('flex');
-  document.getElementById('view-auth').classList.remove('hidden');
 }
 
 function enterDashboard() {
   document.getElementById('view-auth').classList.add('hidden');
   document.getElementById('view-dash').classList.remove('hidden');
   document.getElementById('nav-user').classList.remove('hidden');
-  document.getElementById('nav-user').classList.add('flex');
 
-  document.getElementById('user-badge').textContent = `${user.username} (${user.role})`;
+  document.getElementById('user-badge').textContent = `${user.username} · ${user.role}`;
   document.getElementById('dash-role').textContent = user.role;
+  document.getElementById('list-title').textContent = user.role === 'ADMIN' ? 'Todos los temporizadores' : 'Mis temporizadores';
   document.getElementById('scope-hint').textContent =
     user.role === 'ADMIN'
-      ? 'ADMIN: puede ver todos los relojes.'
-      : 'USER: solo puede ver y gestionar sus propios relojes.';
+      ? 'ADMIN puede observar todos los relojes.'
+      : 'USER solo gestiona sus propios relojes.';
 
   fetchClocks();
+  connectWebSocket();
   startTicker();
+}
+
+function logout() {
+  token = null;
+  user = null;
+  activeClock = null;
+  clockCache = {};
+
+  localStorage.removeItem('tc_token');
+
+  if (socket) socket.close();
+  if (ticker) clearInterval(ticker);
+
+  document.getElementById('view-dash').classList.add('hidden');
+  document.getElementById('nav-user').classList.add('hidden');
+  document.getElementById('view-auth').classList.remove('hidden');
 }
 
 async function api(path, options = {}) {
   const response = await fetch(CLOCK + path, {
     ...options,
-    headers: {
+    headers:{
       ...authHeaders(),
       ...(options.headers || {})
     }
@@ -276,7 +493,7 @@ async function api(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(data.detail || 'Error en clock-svc');
+    throw new Error(data.detail || 'Error del servidor');
   }
 
   return data;
@@ -284,19 +501,21 @@ async function api(path, options = {}) {
 
 async function createClock(event) {
   event.preventDefault();
+
   const name = document.getElementById('clock-name').value.trim();
 
   try {
     const clock = await api('/clocks', {
-      method: 'POST',
-      body: JSON.stringify({name})
+      method:'POST',
+      body:JSON.stringify({name})
     });
 
     document.getElementById('clock-name').value = '';
     activeClock = clock.id;
+
     await fetchClocks();
   } catch (error) {
-    showModal('No se pudo crear', error.message);
+    showModal('No se pudo crear', '<p>' + error.message + '</p>');
   }
 }
 
@@ -305,106 +524,134 @@ async function fetchClocks() {
 
   try {
     const list = await api('/clocks');
+    const now = Date.now() / 1000;
+
     clockCache = {};
 
     list.forEach(clock => {
+      clock._receivedAt = now;
       clockCache[clock.id] = clock;
     });
-
-    renderTable(list);
-    document.getElementById('dash-count').textContent = list.length;
 
     if (!activeClock && list.length) activeClock = list[0].id;
     if (activeClock && !clockCache[activeClock]) activeClock = list[0]?.id || null;
 
-    refreshAscii();
+    renderAll();
   } catch (error) {
     console.warn(error.message);
   }
 }
 
-function formatTime(seconds) {
-  const sec = Math.max(0, Math.floor(seconds || 0));
-  const hh = String(Math.floor(sec / 3600)).padStart(2, '0');
-  const mm = String(Math.floor(sec / 60) % 60).padStart(2, '0');
-  const ss = String(sec % 60).padStart(2, '0');
-  return `${hh}:${mm}:${ss}`;
+function renderAll() {
+  const list = Object.values(clockCache);
+
+  document.getElementById('stat-visible').textContent = list.length;
+  document.getElementById('stat-running').textContent =
+    list.filter(clock => clock.status === 'RUNNING').length;
+
+  renderCards(list);
+  renderHero();
 }
 
-function actionButtons(clock) {
-  const buttons = [
-    `<button onclick="selectClock('${clock.id}')" class="px-2 py-1 bg-indigo-600/20 text-indigo-300 rounded border border-indigo-500/30 text-xs">Ver</button>`
-  ];
+function renderHero() {
+  const clock = clockCache[activeClock];
 
-  if (clock.status === 'RUNNING') {
-    buttons.push(`<button onclick="changeState('${clock.id}','pause')" class="px-2 py-1 bg-amber-600/20 text-amber-300 rounded border border-amber-500/30 text-xs">Pausar</button>`);
-  }
-
-  if (clock.status === 'PAUSED') {
-    buttons.push(`<button onclick="changeState('${clock.id}','resume')" class="px-2 py-1 bg-emerald-600/20 text-emerald-300 rounded border border-emerald-500/30 text-xs">Reanudar</button>`);
-  }
-
-  if (clock.status !== 'STOPPED') {
-    buttons.push(`<button onclick="changeState('${clock.id}','stop')" class="px-2 py-1 bg-slate-600/20 text-slate-300 rounded border border-slate-500/30 text-xs">Detener</button>`);
-  }
-
-  buttons.push(`<button onclick="showHistory('${clock.id}')" class="px-2 py-1 bg-cyan-600/20 text-cyan-300 rounded border border-cyan-500/30 text-xs">Historial</button>`);
-  buttons.push(`<button onclick="deleteClock('${clock.id}')" class="px-2 py-1 bg-rose-600/20 text-rose-300 rounded border border-rose-500/30 text-xs">Borrar</button>`);
-
-  return buttons.join(' ');
-}
-
-function renderTable(list) {
-  const body = document.getElementById('clocks-body');
-
-  if (!list.length) {
-    body.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No hay relojes disponibles.</td></tr>';
+  if (!clock) {
+    document.getElementById('clock-title').textContent = 'Sin reloj seleccionado';
+    document.getElementById('clock-owner').textContent = 'Creá uno para empezar';
+    document.getElementById('big-time').textContent = '00:00:00';
+    document.getElementById('hero-actions').innerHTML = '';
+    document.getElementById('ascii').textContent = '[ sin reloj ]';
     return;
   }
 
-  body.innerHTML = list.map(clock => {
-    const active = clock.id === activeClock;
+  const elapsed = currentElapsed(clock);
 
-    return `
-      <tr class="hover:bg-slate-800/30 transition ${active ? 'bg-indigo-950/20' : ''}">
-        <td class="p-3 cursor-pointer" onclick="selectClock('${clock.id}')">
-          <div class="font-medium">${clock.name} ${active ? '📍' : ''}</div>
-          <div class="text-xs text-slate-500 font-mono">${clock.id}</div>
-        </td>
-        <td class="p-3 text-slate-400">${clock.owner}</td>
-        <td class="p-3"><span class="text-xs px-2 py-1 rounded bg-slate-800">${clock.status}</span></td>
-        <td class="p-3 font-mono text-indigo-300 font-semibold">${formatTime(clock.elapsed)}</td>
-        <td class="p-3 text-right space-x-1 space-y-1">${actionButtons(clock)}</td>
-      </tr>
-    `;
-  }).join('');
+  document.getElementById('clock-title').textContent = clock.name;
+  document.getElementById('clock-owner').textContent =
+    `${clock.owner} · ${clock.status}`;
+  document.getElementById('big-time').textContent = formatTime(elapsed);
+
+  renderAscii(elapsed);
+
+  let buttons = '';
+
+  if (clock.status === 'RUNNING') {
+    buttons += `<button class="btn yellow" onclick="changeState('${clock.id}','pause')">Pausar</button>`;
+  }
+
+  if (clock.status === 'PAUSED') {
+    buttons += `<button class="btn green" onclick="changeState('${clock.id}','resume')">Reanudar</button>`;
+  }
+
+  if (clock.status !== 'STOPPED') {
+    buttons += `<button class="btn" onclick="changeState('${clock.id}','stop')">Detener</button>`;
+  }
+
+  buttons += `<button class="btn" onclick="showHistory('${clock.id}')">Historial</button>`;
+
+  document.getElementById('hero-actions').innerHTML = buttons;
+}
+
+function renderCards(list) {
+  const root = document.getElementById('clock-cards');
+
+  if (!list.length) {
+    root.innerHTML = '<div class="empty">Todavía no hay temporizadores.</div>';
+    return;
+  }
+
+  root.innerHTML = list.map(clock => `
+    <article class="timer-card ${clock.id === activeClock ? 'active' : ''}" onclick="selectClock('${clock.id}')">
+      <div class="card-top">
+        <div>
+          <div class="card-name">${clock.name}</div>
+          <div class="card-owner">${clock.owner}</div>
+        </div>
+        <span class="badge ${clock.status}">${clock.status}</span>
+      </div>
+
+      <div class="card-time" data-clock-time="${clock.id}">
+        ${formatTime(currentElapsed(clock))}
+      </div>
+
+      <div class="card-actions" onclick="event.stopPropagation()">
+        ${clock.status === 'RUNNING' ? `<button class="btn yellow" onclick="changeState('${clock.id}','pause')">Pausar</button>` : ''}
+        ${clock.status === 'PAUSED' ? `<button class="btn green" onclick="changeState('${clock.id}','resume')">Reanudar</button>` : ''}
+        ${clock.status !== 'STOPPED' ? `<button class="btn" onclick="changeState('${clock.id}','stop')">Detener</button>` : ''}
+        <button class="btn" onclick="showHistory('${clock.id}')">Historial</button>
+        <button class="btn red" onclick="deleteClock('${clock.id}')">Borrar</button>
+      </div>
+    </article>
+  `).join('');
 }
 
 function selectClock(id) {
   activeClock = id;
-  refreshAscii();
-  renderTable(Object.values(clockCache));
+  renderAll();
 }
 
 async function changeState(id, action) {
   try {
-    await api(`/clocks/${id}/${action}`, {method: 'POST'});
+    await api(`/clocks/${id}/${action}`, {method:'POST'});
     activeClock = id;
     await fetchClocks();
   } catch (error) {
-    showModal('No se pudo cambiar el estado', error.message);
+    showModal('Acción rechazada', '<p>' + error.message + '</p>');
   }
 }
 
 async function deleteClock(id) {
-  if (!confirm('¿Borrar este reloj?')) return;
+  if (!confirm('¿Eliminar este temporizador?')) return;
 
   try {
-    await api('/clocks/' + id, {method: 'DELETE'});
+    await api('/clocks/' + id, {method:'DELETE'});
+
     if (activeClock === id) activeClock = null;
+
     await fetchClocks();
   } catch (error) {
-    showModal('No se pudo borrar', error.message);
+    showModal('No se pudo borrar', '<p>' + error.message + '</p>');
   }
 }
 
@@ -413,40 +660,30 @@ async function showHistory(id) {
     const events = await api(`/clocks/${id}/history`);
 
     const html = events.length
-      ? '<div class="space-y-2">' + events.map(event => `
-          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-            <div class="font-semibold text-indigo-300">${event.action}</div>
-            <div class="text-xs text-slate-500">${event.username} · ${new Date(event.created_at * 1000).toLocaleString()}</div>
+      ? events.map(item => `
+          <div class="event">
+            <strong>${item.action}</strong>
+            <small>${item.username} · ${new Date(item.created_at * 1000).toLocaleString()}</small>
           </div>
-        `).join('') + '</div>'
-      : 'Sin eventos registrados.';
+        `).join('')
+      : '<p>No hay eventos registrados.</p>';
 
-    showModal('Historial del reloj', html);
+    showModal('Historial', html);
   } catch (error) {
-    showModal('No se pudo cargar el historial', error.message);
+    showModal('No se pudo cargar', '<p>' + error.message + '</p>');
   }
-}
-
-function refreshAscii() {
-  const clock = clockCache[activeClock];
-
-  if (!clock) {
-    document.getElementById('ascii').textContent = '[ creá o seleccioná un reloj ]';
-    document.getElementById('ascii-title').textContent = 'Sin reloj seleccionado';
-    return;
-  }
-
-  renderAscii(Math.floor(clock.elapsed || 0));
-  document.getElementById('ascii-title').textContent =
-    `${clock.name} · ${clock.status} · ${clock.owner}`;
 }
 
 function startTicker() {
   if (ticker) clearInterval(ticker);
 
-  ticker = setInterval(async () => {
-    if (!user) return;
-    await fetchClocks();
+  ticker = setInterval(() => {
+    renderHero();
+
+    document.querySelectorAll('[data-clock-time]').forEach(node => {
+      const clock = clockCache[node.dataset.clockTime];
+      if (clock) node.textContent = formatTime(currentElapsed(clock));
+    });
   }, 1000);
 }
 
@@ -465,8 +702,8 @@ window.addEventListener('load', () => {
 
     token = saved;
     user = {
-      username: payload.sub,
-      role: payload.role
+      username:payload.sub,
+      role:payload.role
     };
 
     enterDashboard();

@@ -94,6 +94,10 @@ class NewClock(BaseModel):
     name: str
 
 
+class SyncClocks(BaseModel):
+    clock_ids: list[str]
+
+
 def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET, algorithms=["HS256"])
@@ -138,6 +142,7 @@ def serialize(row: sqlite3.Row):
         "owner": row["owner"],
         "status": row["status"],
         "started_at": row["started_at"],
+        "base_elapsed": float(row["elapsed_before_pause"] or 0),
         "elapsed": elapsed_for(row),
         "created_at": row["created_at"],
         "updated_at": row["updated_at"]
@@ -298,6 +303,57 @@ def list_clocks(user=Depends(current_user)):
         future.result()
         for future in futures
     ]
+
+
+
+@app.post("/sync")
+async def sync_clocks(payload: SyncClocks, user=Depends(current_user)):
+    if user["role"] != "ADMIN":
+        raise HTTPException(403, "Solo ADMIN puede sincronizar relojes")
+
+    ids = list(dict.fromkeys(payload.clock_ids))
+    if len(ids) < 2:
+        raise HTTPException(400, "Selecciona al menos dos relojes")
+
+    now = time.time()
+
+    with _lock:
+        con = connect()
+        placeholders = ",".join("?" for _ in ids)
+        rows = con.execute(
+            f"SELECT * FROM clocks WHERE id IN ({placeholders})",
+            ids
+        ).fetchall()
+
+        if len(rows) != len(ids):
+            con.close()
+            raise HTTPException(404, "Uno o mas relojes no existen")
+
+        for row in rows:
+            con.execute(
+                """
+                UPDATE clocks
+                SET status='RUNNING',
+                    started_at=?,
+                    elapsed_before_pause=0,
+                    updated_at=?
+                WHERE id=?
+                """,
+                (now, now, row["id"])
+            )
+            add_event(con, row["id"], "SYNCED", user["username"])
+
+        con.commit()
+        con.close()
+
+    for row in rows:
+        await notify_change("SYNCED", row["id"], row["owner"])
+
+    return {
+        "ok": True,
+        "started_at": now,
+        "clock_ids": ids
+    }
 
 
 @app.get("/clocks/{cid}")

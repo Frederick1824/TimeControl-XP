@@ -225,6 +225,11 @@ def health():
     }
 
 
+@app.get("/time")
+def server_time():
+    return {"server_time_ms": time.time() * 1000}
+
+
 @app.post("/clocks")
 async def create_clock(c: NewClock, user=Depends(current_user)):
     name = c.name.strip()

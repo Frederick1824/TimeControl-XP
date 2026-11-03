@@ -107,7 +107,8 @@ La sesión es stateless mediante JWT.
 
 El frontend conserva el token mientras sea válido y elimina la sesión al cerrar sesión o detectar expiración.
 
-### Concurrencia y procesamiento multihilo
+### Concurrencia, procesamiento multihilo y tiempo real
+
 
 Los temporizadores no dependen de un contador bloqueante.
 
@@ -115,9 +116,42 @@ Cada reloj almacena timestamps y calcula su tiempo transcurrido a partir del rel
 
 El servicio utiliza FastAPI/Uvicorn para atender solicitudes concurrentes y un `ThreadPoolExecutor` para procesar múltiples relojes simultáneamente al listar resultados.
 
+Además, `clock-svc` mantiene conexiones WebSocket activas para notificar cambios a múltiples clientes en tiempo real.
+
 SQLite se configura con WAL y `busy_timeout` para mejorar el comportamiento ante accesos concurrentes.
 
+## Comunicación REST + WebSocket
+
+TimeControl utiliza dos mecanismos complementarios:
+
+- **REST** para ejecutar operaciones del negocio: crear, pausar, reanudar, detener, consultar historial y eliminar.
+- **WebSocket** para avisar en tiempo real a los navegadores conectados cuando un temporizador cambia de estado.
+
+Esto evita hacer polling constante al backend.
+
+El frontend mantiene el conteo visual localmente y sincroniza nuevamente con el servidor cuando recibe un evento WebSocket.
+
+Endpoint WebSocket:
+
+```text
+ws://localhost:8002/ws?token=<JWT>
+```
+
+Eventos enviados:
+
+```json
+{
+  "type": "clock_changed",
+  "action": "PAUSED",
+  "clock_id": "abc123",
+  "owner": "fede"
+}
+```
+
+El JWT también se valida al establecer la conexión WebSocket.
+
 ## API REST
+
 
 ### Autenticación
 

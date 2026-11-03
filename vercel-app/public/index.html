@@ -270,7 +270,10 @@ button{cursor:pointer}
           <h3 id="list-title">Mis temporizadores</h3>
           <p>Los cambios de otros clientes llegan mediante WebSocket.</p>
         </div>
-        <button class="btn" onclick="fetchClocks()">Sincronizar</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="sync-selected-btn" class="btn primary hidden" onclick="syncSelected()">Sincronizar seleccionados</button>
+          <button class="btn" onclick="fetchClocks()">Actualizar</button>
+        </div>
       </div>
       <div id="clock-cards" class="cards"></div>
     </section>
@@ -301,6 +304,7 @@ let socket = null;
 let ticker = null;
 let serverOffsetMs = 0;
 let lastSyncRttMs = null;
+let selectedClockIds = new Set();
 
 const D = {
 '0':["|‾‾‾‾‾‾‾|","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","| [\ \] |","| [\\ ] |","| [ \\] |","|_______|"],
@@ -341,12 +345,18 @@ function formatTime(value, withMs = true) {
 
 function currentElapsed(clock) {
   if (!clock) return 0;
-  const base = Number(clock.elapsed || 0);
 
-  if (clock.status !== 'RUNNING') return base;
+  if (clock.status !== 'RUNNING') {
+    return Number(clock.elapsed || 0);
+  }
 
-  const receivedAt = clock._receivedAt || ((Date.now() + serverOffsetMs) / 1000);
-  return base + (((Date.now() + serverOffsetMs) / 1000) - receivedAt);
+  const base = Number(clock.base_elapsed || 0);
+  const startedAt = Number(clock.started_at || 0);
+
+  if (!startedAt) return Number(clock.elapsed || 0);
+
+  const serverNow = (Date.now() + serverOffsetMs) / 1000;
+  return Math.max(0, base + (serverNow - startedAt));
 }
 
 function authHeaders() {
@@ -640,6 +650,13 @@ function renderHero() {
 
 function renderCards(list) {
   const root = document.getElementById('clock-cards');
+  const syncBtn = document.getElementById('sync-selected-btn');
+  if (syncBtn) {
+    syncBtn.classList.toggle('hidden', user?.role !== 'ADMIN');
+    syncBtn.textContent = selectedClockIds.size
+      ? `Sincronizar seleccionados (${selectedClockIds.size})`
+      : 'Sincronizar seleccionados';
+  }
 
   if (!list.length) {
     root.innerHTML = '<div class="empty">Todavía no hay temporizadores.</div>';
@@ -650,6 +667,14 @@ function renderCards(list) {
     <article class="timer-card ${clock.id === activeClock ? 'active' : ''}" onclick="selectClock('${clock.id}')">
       <div class="card-top">
         <div>
+          ${user?.role === 'ADMIN' ? `
+            <label style="display:flex;align-items:center;gap:7px;margin-bottom:10px;color:var(--muted);font-size:11px" onclick="event.stopPropagation()">
+              <input type="checkbox"
+                     ${selectedClockIds.has(clock.id) ? 'checked' : ''}
+                     onchange="toggleClockSelection('${clock.id}', this.checked)">
+              sincronizar
+            </label>
+          ` : ''}
           <div class="card-name">${clock.name}</div>
           <div class="card-owner">${clock.owner}</div>
         </div>
@@ -674,6 +699,40 @@ function renderCards(list) {
 function selectClock(id) {
   activeClock = id;
   renderAll();
+}
+
+function toggleClockSelection(id, checked) {
+  if (checked) selectedClockIds.add(id);
+  else selectedClockIds.delete(id);
+  renderAll();
+}
+
+async function syncSelected() {
+  if (user?.role !== 'ADMIN') return;
+
+  const ids = Array.from(selectedClockIds);
+
+  if (ids.length < 2) {
+    showModal('Sincronización', '<p>Seleccioná al menos dos relojes.</p>');
+    return;
+  }
+
+  try {
+    await api('/sync', {
+      method:'POST',
+      body:JSON.stringify({clock_ids: ids})
+    });
+
+    await syncWithServer();
+    await fetchClocks();
+
+    showModal(
+      'Sincronización iniciada',
+      `<p>${ids.length} relojes arrancaron desde <strong>00:00:00.000</strong> con el mismo timestamp del servidor.</p>`
+    );
+  } catch (error) {
+    showModal('No se pudo sincronizar', '<p>' + error.message + '</p>');
+  }
 }
 
 async function changeState(id, action) {

@@ -19,6 +19,10 @@ services:
 
   web:
     build: ./web
+    environment:
+      - PORT=80
+      - AUTH_HOSTPORT=auth-svc:8001
+      - CLOCK_HOSTPORT=clock-svc:8002
     ports:
       - "8000:80"
     depends_on:

@@ -36,6 +36,10 @@ class NewClock(BaseModel):
     name: str
 
 
+class SyncClocks(BaseModel):
+    clock_ids: list[str]
+
+
 def db():
     if not DATABASE_URL:
         raise HTTPException(500, "Falta DATABASE_URL")
@@ -133,6 +137,7 @@ def elapsed(clock: dict[str, Any]) -> float:
 
 def serialize(clock: dict[str, Any]) -> dict[str, Any]:
     result = dict(clock)
+    result["base_elapsed"] = float(clock.get("elapsed_before_pause") or 0)
     result["elapsed"] = elapsed(clock)
     return result
 
@@ -288,6 +293,54 @@ def list_clocks(user=Depends(current_user)):
             rows = cur.fetchall()
 
     return [serialize(row) for row in rows]
+
+
+
+@app.post("/api/sync")
+async def sync_clocks(payload: SyncClocks, user=Depends(current_user)):
+    if user["role"] != "ADMIN":
+        raise HTTPException(403, "Solo ADMIN puede sincronizar relojes")
+
+    ids = list(dict.fromkeys(payload.clock_ids))
+    if len(ids) < 2:
+        raise HTTPException(400, "Selecciona al menos dos relojes")
+
+    now = time.time()
+
+    with db() as con:
+        with con.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM clocks WHERE id = ANY(%s)",
+                (ids,)
+            )
+            rows = cur.fetchall()
+
+            if len(rows) != len(ids):
+                raise HTTPException(404, "Uno o mas relojes no existen")
+
+            for row in rows:
+                cur.execute(
+                    """
+                    UPDATE clocks
+                    SET status='RUNNING',
+                        started_at=%s,
+                        elapsed_before_pause=0,
+                        updated_at=%s
+                    WHERE id=%s
+                    """,
+                    (now, now, row["id"])
+                )
+                add_event(cur, row["id"], "SYNCED", user["username"])
+        con.commit()
+
+    for row in rows:
+        await broadcast("SYNCED", row["id"], row["owner"])
+
+    return {
+        "ok": True,
+        "started_at": now,
+        "clock_ids": ids
+    }
 
 
 @app.get("/api/clocks/{cid}")

@@ -185,6 +185,11 @@ def health():
     return {"ok": True, "websocket_clients": len(connections)}
 
 
+@app.get("/api/time")
+def server_time():
+    return {"server_time_ms": time.time() * 1000}
+
+
 @app.post("/api/register")
 def register(c: Credentials):
     username = c.username.strip()

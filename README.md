@@ -1,68 +1,269 @@
 # TimeControl-XP
 
-Sistema web multiusuario para la gestión de temporizadores, desarrollado a partir de un reloj ASCII y evolucionado hacia una aplicación frontend interactiva con HTML, CSS y JavaScript.
+Sistema web multiusuario para gestión de temporizadores, desarrollado a partir de un reloj ASCII en Python y evolucionado hacia una aplicación distribuida con frontend, API REST, autenticación, autorización, persistencia, concurrencia y Docker.
 
-El proyecto busca transformar una idea inicial simple en una solución web funcional con autenticación simulada, roles, temporizadores concurrentes, historial de eventos y una interfaz para probar la experiencia de usuario en navegador.
+El proyecto se desarrolla aplicando Programación Extrema (XP) y parte del requerimiento de transformar el reloj ASCII original en una solución web multiusuario.
+
+## Integrantes
+
+- Federico Montoro
+- Uziel Gamarra
 
 ## Objetivo
 
-Desarrollar una aplicación web que permita a distintos usuarios crear y gestionar temporizadores de manera independiente.
+Permitir que distintos usuarios puedan registrarse, iniciar sesión y gestionar sus propios temporizadores.
 
-Cada usuario podrá iniciar sesión, crear temporizadores, pausarlos, reanudarlos, detenerlos y consultar su historial de actividad. El sistema deberá soportar varios temporizadores simultáneos sin bloquear la experiencia del usuario.
+Cada usuario puede crear relojes, pausarlos, reanudarlos, detenerlos, consultar su historial y visualizar el tiempo transcurrido mediante el reloj ASCII.
 
-## Estado actual del proyecto
+El rol ADMIN puede visualizar y gestionar todos los relojes del sistema.
 
-Este repositorio se encuentra en una etapa de prototipo frontend funcional, con una interfaz web completa para:
+## Arquitectura
 
-- Login y registro simulados.
-- Roles ADMIN y USER.
-- Creación de temporizadores.
-- Inicio, pausa, reanudación y finalización de temporizadores.
-- Visualización de un reloj ASCII en tiempo real.
-- Historial de eventos y acciones.
-- Simulación de concurrencia con múltiples temporizadores activos.
+El proyecto se divide en tres componentes:
 
-## Tecnologías utilizadas
+```text
+timecontrol/
+├── auth-svc/       # autenticación, usuarios y JWT
+├── clock-svc/      # temporizadores, autorización, persistencia e historial
+├── web/            # frontend HTML/CSS/JavaScript
+└── docker-compose.yml
+```
 
-- HTML5
-- CSS3
-- JavaScript
-- Tailwind CSS (para la interfaz)
-- Reloj ASCII renderizado en navegador
+### auth-svc
 
-## Requerimientos principales del proyecto
+Backend FastAPI encargado de:
 
-- Registro de usuarios.
-- Inicio y cierre de sesión.
-- Roles USER y ADMIN.
-- Gestión de temporizadores.
-- Historial de eventos.
-- Persistencia de datos.
-- API REST.
-- Autorización por usuario y rol.
-- Gestión de sesión.
-- Procesamiento concurrente.
-- Frontend funcional en navegador.
-- Ejecución mediante Docker.
-- Desarrollo aplicando Programación Extrema.
+- registro de usuarios;
+- login;
+- persistencia de usuarios con SQLite;
+- roles USER y ADMIN;
+- generación de JWT con expiración;
+- validación de credenciales.
 
-## Roles
+### clock-svc
 
-### USER
+Backend FastAPI encargado de:
 
-Puede crear, iniciar, pausar, reanudar y finalizar sus propios temporizadores.
+- crear temporizadores;
+- listar relojes visibles para el usuario;
+- pausar y reanudar;
+- detener;
+- eliminar;
+- consultar historial;
+- persistir relojes e historial en SQLite;
+- validar JWT;
+- verificar propiedad del recurso;
+- permitir acceso global al rol ADMIN.
 
-### ADMIN
+### web
 
-Puede realizar todas las acciones de un usuario y además consultar usuarios y temporizadores del sistema.
+Frontend servido mediante Nginx.
 
-## Concurrencia
+Incluye:
 
-El sistema contempla la ejecución simultánea de múltiples temporizadores sin que uno bloquee al resto.
+- login y registro;
+- sesión mediante JWT almacenado en el navegador;
+- reloj ASCII;
+- creación de temporizadores;
+- estados RUNNING, PAUSED y STOPPED;
+- historial de eventos;
+- controles según estado;
+- visualización multiusuario.
 
-En la versión actual, esta concurrencia se simula en el frontend mediante un ticker y lógica basada en tiempo real para varios temporizadores activos.
+## Requerimientos cubiertos
 
-## Historias de usuario iniciales
+### Persistencia
+
+Se utiliza SQLite:
+
+- `auth-svc` persiste usuarios en `/data/users.db`;
+- `clock-svc` persiste relojes e historial en `/data/clocks.db`.
+
+Los volúmenes Docker conservan los datos aunque los contenedores sean recreados.
+
+### Autenticación
+
+El usuario se registra y luego inicia sesión en:
+
+```http
+POST /register
+POST /login
+```
+
+El login devuelve un JWT firmado con expiración.
+
+### Autorización
+
+El `clock-svc` valida el JWT en cada endpoint protegido.
+
+- USER puede acceder solamente a sus propios relojes.
+- ADMIN puede acceder a todos los relojes.
+
+La propiedad del recurso se verifica en el backend, evitando que un usuario modifique relojes ajenos cambiando un ID desde el navegador.
+
+### Gestión de sesión
+
+La sesión es stateless mediante JWT.
+
+El frontend conserva el token mientras sea válido y elimina la sesión al cerrar sesión o detectar expiración.
+
+### Concurrencia, procesamiento multihilo y tiempo real
+
+
+Los temporizadores no dependen de un contador bloqueante.
+
+Cada reloj almacena timestamps y calcula su tiempo transcurrido a partir del reloj del servidor.
+
+El servicio utiliza FastAPI/Uvicorn para atender solicitudes concurrentes y un `ThreadPoolExecutor` para procesar múltiples relojes simultáneamente al listar resultados.
+
+Además, `clock-svc` mantiene conexiones WebSocket activas para notificar cambios a múltiples clientes en tiempo real.
+
+SQLite se configura con WAL y `busy_timeout` para mejorar el comportamiento ante accesos concurrentes.
+
+## Comunicación REST + WebSocket
+
+TimeControl utiliza dos mecanismos complementarios:
+
+- **REST** para ejecutar operaciones del negocio: crear, pausar, reanudar, detener, consultar historial y eliminar.
+- **WebSocket** para avisar en tiempo real a los navegadores conectados cuando un temporizador cambia de estado.
+
+Esto evita hacer polling constante al backend.
+
+El frontend mantiene el conteo visual localmente y sincroniza nuevamente con el servidor cuando recibe un evento WebSocket.
+
+Endpoint WebSocket:
+
+```text
+ws://localhost:8002/ws?token=<JWT>
+```
+
+Eventos enviados:
+
+```json
+{
+  "type": "clock_changed",
+  "action": "PAUSED",
+  "clock_id": "abc123",
+  "owner": "fede"
+}
+```
+
+El JWT también se valida al establecer la conexión WebSocket.
+
+## API REST
+
+
+### Autenticación
+
+```http
+POST http://localhost:8001/register
+POST http://localhost:8001/login
+```
+
+### Temporizadores
+
+Todos los endpoints de relojes requieren:
+
+```http
+Authorization: Bearer <JWT>
+```
+
+Endpoints:
+
+```http
+POST   /clocks
+GET    /clocks
+GET    /clocks/{id}
+POST   /clocks/{id}/pause
+POST   /clocks/{id}/resume
+POST   /clocks/{id}/stop
+GET    /clocks/{id}/history
+DELETE /clocks/{id}
+```
+
+## Estados del temporizador
+
+```text
+RUNNING
+PAUSED
+STOPPED
+```
+
+Un reloj nuevo comienza en RUNNING.
+
+RUNNING puede pasar a PAUSED o STOPPED.
+
+PAUSED puede pasar nuevamente a RUNNING mediante resume o finalizar en STOPPED.
+
+## Historial
+
+Cada reloj registra eventos como:
+
+```text
+CREATED
+STARTED
+PAUSED
+RESUMED
+STOPPED
+DELETED
+```
+
+El historial registra también el usuario y la fecha/hora de la acción.
+
+## Reloj ASCII
+
+Las matrices originales del reloj en Python fueron adaptadas al frontend JavaScript.
+
+El visor genera dinámicamente:
+
+```text
+HH:MM:SS
+```
+
+manteniendo la estética ASCII del proyecto original.
+
+## Docker
+
+Desde la carpeta `timecontrol`:
+
+```bash
+docker compose up --build
+```
+
+Servicios:
+
+| Servicio | Puerto |
+| --- | ---: |
+| Frontend | 8000 |
+| auth-svc | 8001 |
+| clock-svc | 8002 |
+
+Abrir:
+
+```text
+http://localhost:8000
+```
+
+## Usuario ADMIN de demostración
+
+```text
+usuario: admin
+contraseña: admin123
+```
+
+Este usuario existe únicamente con fines académicos y de demostración.
+
+## Programación Extrema
+
+El desarrollo se organiza mediante historias de usuario y ciclos incrementales.
+
+Ciclo utilizado:
+
+```text
+RED -> GREEN -> REFACTOR
+```
+
+Historias principales:
 
 ### HU1
 Como usuario quiero registrarme e iniciar sesión para acceder al sistema.
@@ -71,41 +272,40 @@ Como usuario quiero registrarme e iniciar sesión para acceder al sistema.
 Como usuario quiero crear un temporizador para controlar una actividad.
 
 ### HU3
-Como usuario quiero iniciar, pausar y reanudar un temporizador.
+Como usuario quiero pausar, reanudar y detener un temporizador.
 
 ### HU4
-Como usuario quiero ejecutar varios temporizadores simultáneamente.
+Como usuario quiero ejecutar varios temporizadores sin que uno bloquee a los demás.
 
 ### HU5
 Como usuario quiero consultar el historial de un temporizador.
 
 ### HU6
-Como administrador quiero consultar los usuarios y temporizadores del sistema.
+Como administrador quiero consultar y gestionar los relojes del sistema.
 
-## Programación Extrema
+## Relación con el avance original de Uziel
 
-Cada funcionalidad debería atravesar el ciclo:
+El desarrollo conserva las ideas presentadas inicialmente por Uziel:
 
-RED -> GREEN -> REFACTOR
+- integración de las matrices del reloj ASCII en JavaScript;
+- funcionamiento de varios temporizadores a partir de timestamps;
+- roles ADMIN y USER;
+- historial de actividad;
+- contenedores Docker;
+- diseño incremental orientado a XP.
 
-Se aplicarán historias de usuario, pruebas automatizadas, integración frecuente, revisión entre pares y refactorización continua.
+La implementación actual completa esos puntos llevando la autorización, persistencia, estados e historial también al backend.
 
-## Próximos pasos
+## Prototipo inicial
 
-- Backend real en Python.
-- API REST para persistencia y lógica del negocio.
-- Base de datos.
-- Autenticación y autorización reales.
-- Gestión de sesiones.
-- Concurrencia del lado servidor.
-- Dockerización final.
-- Integración frontend-backend.
+El archivo `timecontrol_web_application.html` en la raíz se conserva como evidencia del prototipo frontend previo.
 
-## Integrantes
+La aplicación integrada y dockerizada se encuentra en:
 
-- Federico Montoro
-- Uziel Gamarra
+```text
+timecontrol/web/index.html
+```
 
 ## Proyecto académico
 
-Proyecto desarrollado aplicando conceptos de backend, concurrencia, arquitectura web, contenedores y Programación Extrema, con una primera versión en frontend para validar la experiencia de uso y la lógica de temporizadores.
+Proyecto desarrollado para aplicar persistencia, autenticación, autorización, gestión de sesión, concurrencia, API REST, contenedores y Programación Extrema.

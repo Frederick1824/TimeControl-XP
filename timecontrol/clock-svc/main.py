@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import RLock
 
 import jwt
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -22,6 +22,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, event: dict):
+        disconnected = []
+
+        for websocket in self.active_connections:
+            try:
+                await websocket.send_json(event)
+            except Exception:
+                disconnected.append(websocket)
+
+        for websocket in disconnected:
+            self.disconnect(websocket)
+
+
+manager = ConnectionManager()
 
 
 def connect():
@@ -52,8 +80,7 @@ def init_db():
             clock_id TEXT NOT NULL,
             action TEXT NOT NULL,
             username TEXT NOT NULL,
-            created_at REAL NOT NULL,
-            FOREIGN KEY(clock_id) REFERENCES clocks(id)
+            created_at REAL NOT NULL
         )
     """)
     con.commit()
@@ -67,11 +94,7 @@ class NewClock(BaseModel):
     name: str
 
 
-def current_user(authorization: str | None = Header(default=None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(401, "Token requerido")
-
-    token = authorization.split(" ", 1)[1]
+def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
@@ -79,10 +102,24 @@ def current_user(authorization: str | None = Header(default=None)):
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Token invalido")
 
+    username = payload.get("sub")
+    role = payload.get("role", "USER")
+
+    if not username:
+        raise HTTPException(401, "Token invalido")
+
     return {
-        "username": payload.get("sub"),
-        "role": payload.get("role", "USER")
+        "username": username,
+        "role": role
     }
+
+
+def current_user(authorization: str | None = Header(default=None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Token requerido")
+
+    token = authorization.split(" ", 1)[1]
+    return decode_token(token)
 
 
 def elapsed_for(row: sqlite3.Row) -> float:
@@ -110,13 +147,20 @@ def serialize(row: sqlite3.Row):
 def require_access(row: sqlite3.Row, user: dict):
     if user["role"] == "ADMIN":
         return
+
     if row["owner"] != user["username"]:
-        raise HTTPException(403, "No tienes permiso para acceder a este reloj")
+        raise HTTPException(
+            403,
+            "No tienes permiso para acceder a este reloj"
+        )
 
 
 def get_clock_row(cid: str) -> sqlite3.Row:
     con = connect()
-    row = con.execute("SELECT * FROM clocks WHERE id = ?", (cid,)).fetchone()
+    row = con.execute(
+        "SELECT * FROM clocks WHERE id = ?",
+        (cid,)
+    ).fetchone()
     con.close()
 
     if not row:
@@ -125,21 +169,66 @@ def get_clock_row(cid: str) -> sqlite3.Row:
     return row
 
 
-def add_event(con, cid: str, action: str, username: str):
+def add_event(
+    con: sqlite3.Connection,
+    cid: str,
+    action: str,
+    username: str
+):
     con.execute(
-        "INSERT INTO events(clock_id, action, username, created_at) VALUES (?, ?, ?, ?)",
+        """
+        INSERT INTO events(clock_id, action, username, created_at)
+        VALUES (?, ?, ?, ?)
+        """,
         (cid, action, username, time.time())
     )
 
 
+async def notify_change(action: str, clock_id: str, owner: str):
+    await manager.broadcast({
+        "type": "clock_changed",
+        "action": action,
+        "clock_id": clock_id,
+        "owner": owner,
+        "timestamp": time.time()
+    })
+
+
+@app.websocket("/ws")
+async def websocket_updates(websocket: WebSocket, token: str):
+    try:
+        user = decode_token(token)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
+
+    await manager.connect(websocket)
+
+    await websocket.send_json({
+        "type": "connected",
+        "username": user["username"],
+        "role": user["role"]
+    })
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {
+        "ok": True,
+        "websocket_clients": len(manager.active_connections)
+    }
 
 
 @app.post("/clocks")
-def create_clock(c: NewClock, user=Depends(current_user)):
+async def create_clock(c: NewClock, user=Depends(current_user)):
     name = c.name.strip()
+
     if not name:
         raise HTTPException(400, "El nombre es obligatorio")
 
@@ -157,13 +246,22 @@ def create_clock(c: NewClock, user=Depends(current_user)):
             """,
             (cid, name, user["username"], now, now, now)
         )
+
         add_event(con, cid, "CREATED", user["username"])
         add_event(con, cid, "STARTED", user["username"])
+
         con.commit()
-        row = con.execute("SELECT * FROM clocks WHERE id = ?", (cid,)).fetchone()
+
+        row = con.execute(
+            "SELECT * FROM clocks WHERE id = ?",
+            (cid,)
+        ).fetchone()
+
         con.close()
 
-    return serialize(row)
+    result = serialize(row)
+    await notify_change("CREATED", cid, user["username"])
+    return result
 
 
 @app.get("/clocks")
@@ -176,14 +274,25 @@ def list_clocks(user=Depends(current_user)):
         ).fetchall()
     else:
         rows = con.execute(
-            "SELECT * FROM clocks WHERE owner = ? ORDER BY created_at DESC",
+            """
+            SELECT * FROM clocks
+            WHERE owner = ?
+            ORDER BY created_at DESC
+            """,
             (user["username"],)
         ).fetchall()
 
     con.close()
 
-    futures = [_executor.submit(serialize, row) for row in rows]
-    return [future.result() for future in futures]
+    futures = [
+        _executor.submit(serialize, row)
+        for row in rows
+    ]
+
+    return [
+        future.result()
+        for future in futures
+    ]
 
 
 @app.get("/clocks/{cid}")
@@ -194,16 +303,20 @@ def get_clock(cid: str, user=Depends(current_user)):
 
 
 @app.post("/clocks/{cid}/pause")
-def pause_clock(cid: str, user=Depends(current_user)):
+async def pause_clock(cid: str, user=Depends(current_user)):
     with _lock:
         row = get_clock_row(cid)
         require_access(row, user)
 
         if row["status"] != "RUNNING":
-            raise HTTPException(409, "Solo se puede pausar un reloj en ejecucion")
+            raise HTTPException(
+                409,
+                "Solo se puede pausar un reloj en ejecucion"
+            )
 
         elapsed = elapsed_for(row)
         now = time.time()
+
         con = connect()
         con.execute(
             """
@@ -216,24 +329,36 @@ def pause_clock(cid: str, user=Depends(current_user)):
             """,
             (elapsed, now, cid)
         )
+
         add_event(con, cid, "PAUSED", user["username"])
         con.commit()
-        updated = con.execute("SELECT * FROM clocks WHERE id=?", (cid,)).fetchone()
+
+        updated = con.execute(
+            "SELECT * FROM clocks WHERE id=?",
+            (cid,)
+        ).fetchone()
+
         con.close()
 
-    return serialize(updated)
+    result = serialize(updated)
+    await notify_change("PAUSED", cid, updated["owner"])
+    return result
 
 
 @app.post("/clocks/{cid}/resume")
-def resume_clock(cid: str, user=Depends(current_user)):
+async def resume_clock(cid: str, user=Depends(current_user)):
     with _lock:
         row = get_clock_row(cid)
         require_access(row, user)
 
         if row["status"] != "PAUSED":
-            raise HTTPException(409, "Solo se puede reanudar un reloj pausado")
+            raise HTTPException(
+                409,
+                "Solo se puede reanudar un reloj pausado"
+            )
 
         now = time.time()
+
         con = connect()
         con.execute(
             """
@@ -245,16 +370,24 @@ def resume_clock(cid: str, user=Depends(current_user)):
             """,
             (now, now, cid)
         )
+
         add_event(con, cid, "RESUMED", user["username"])
         con.commit()
-        updated = con.execute("SELECT * FROM clocks WHERE id=?", (cid,)).fetchone()
+
+        updated = con.execute(
+            "SELECT * FROM clocks WHERE id=?",
+            (cid,)
+        ).fetchone()
+
         con.close()
 
-    return serialize(updated)
+    result = serialize(updated)
+    await notify_change("RESUMED", cid, updated["owner"])
+    return result
 
 
 @app.post("/clocks/{cid}/stop")
-def stop_clock(cid: str, user=Depends(current_user)):
+async def stop_clock(cid: str, user=Depends(current_user)):
     with _lock:
         row = get_clock_row(cid)
         require_access(row, user)
@@ -264,6 +397,7 @@ def stop_clock(cid: str, user=Depends(current_user)):
 
         elapsed = elapsed_for(row)
         now = time.time()
+
         con = connect()
         con.execute(
             """
@@ -276,26 +410,47 @@ def stop_clock(cid: str, user=Depends(current_user)):
             """,
             (elapsed, now, cid)
         )
+
         add_event(con, cid, "STOPPED", user["username"])
         con.commit()
-        updated = con.execute("SELECT * FROM clocks WHERE id=?", (cid,)).fetchone()
+
+        updated = con.execute(
+            "SELECT * FROM clocks WHERE id=?",
+            (cid,)
+        ).fetchone()
+
         con.close()
 
-    return serialize(updated)
+    result = serialize(updated)
+    await notify_change("STOPPED", cid, updated["owner"])
+    return result
 
 
 @app.delete("/clocks/{cid}")
-def delete_clock(cid: str, user=Depends(current_user)):
+async def delete_clock(cid: str, user=Depends(current_user)):
     with _lock:
         row = get_clock_row(cid)
         require_access(row, user)
+        owner = row["owner"]
 
         con = connect()
-        add_event(con, cid, "DELETED", user["username"])
-        con.execute("DELETE FROM clocks WHERE id = ?", (cid,))
+
+        add_event(
+            con,
+            cid,
+            "DELETED",
+            user["username"]
+        )
+
+        con.execute(
+            "DELETE FROM clocks WHERE id = ?",
+            (cid,)
+        )
+
         con.commit()
         con.close()
 
+    await notify_change("DELETED", cid, owner)
     return {"ok": True}
 
 
@@ -305,6 +460,7 @@ def clock_history(cid: str, user=Depends(current_user)):
     require_access(row, user)
 
     con = connect()
+
     rows = con.execute(
         """
         SELECT action, username, created_at
@@ -314,6 +470,10 @@ def clock_history(cid: str, user=Depends(current_user)):
         """,
         (cid,)
     ).fetchall()
+
     con.close()
 
-    return [dict(event) for event in rows]
+    return [
+        dict(event)
+        for event in rows
+    ]

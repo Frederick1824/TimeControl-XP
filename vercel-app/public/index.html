@@ -524,7 +524,7 @@ function logout() {
   localStorage.removeItem('tc_token');
 
   if (socket) socket.close();
-  if (ticker) clearInterval(ticker);
+  if (ticker) cancelAnimationFrame(ticker);
 
   document.getElementById('view-dash').classList.add('hidden');
   document.getElementById('nav-user').classList.add('hidden');
@@ -779,16 +779,20 @@ async function showHistory(id) {
 }
 
 function startTicker() {
-  if (ticker) clearInterval(ticker);
+  if (ticker) cancelAnimationFrame(ticker);
 
-  ticker = setInterval(() => {
+  const tick = () => {
     renderHero();
 
     document.querySelectorAll('[data-clock-time]').forEach(node => {
       const clock = clockCache[node.dataset.clockTime];
       if (clock) node.textContent = formatTime(currentElapsed(clock), true);
     });
-  }, 1000);
+
+    ticker = requestAnimationFrame(tick);
+  };
+
+  ticker = requestAnimationFrame(tick);
 }
 
 window.addEventListener('load', () => {

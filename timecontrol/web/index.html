@@ -287,9 +287,9 @@ button{cursor:pointer}
 </div>
 
 <script>
-const AUTH = "http://localhost:8001";
-const CLOCK = "http://localhost:8002";
-const WS = "ws://localhost:8002/ws";
+const AUTH = "/auth";
+const CLOCK = "/clock";
+const WS = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 
 let user = null;
 let token = null;
